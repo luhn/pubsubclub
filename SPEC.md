@@ -25,7 +25,7 @@ parameters for that message.  The messages are as follows.
 
 #### PSC101 — Declare implemented versions
 
-Sent by:  Producer, Consumer
+Sent by:  Consumer
 
 Declare the the version of the PubSubClub Protocol that the implementation
 supports.  Each supported version is sent as a parameter, serialized as an
@@ -36,7 +36,7 @@ Parameters:  version (array), version (array), version (array), ...
 
 #### PSC102 — Choose version
 
-Sent by:  Producer, Consumer
+Sent by:  Producer
 
 After a party has declared implemented versions (PSC101), the opposing party
 selects which version the connection will use.  The highest mutually-supported
