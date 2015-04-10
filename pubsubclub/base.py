@@ -125,6 +125,19 @@ class ServerBase(websocket.WebSocketServerFactory):
 
 
 def make_client(name, class_, protocol):
+    """
+    Create a WebSocket client container (subclass of :class:`ClientBase`),
+    subclassing from the given class.
+
+    :param class_:  The class to subclass the container from.
+    :type class_:  type
+    :param protocol:  The class to subclass the protocol from.
+    :type protocol:  type
+
+    :returns:  The WebSocket client container
+    :rtype:  type
+
+    """
     Protocol = type(
         'ClientProtocol',
         (protocol, websocket.WebSocketClientProtocol),
@@ -144,6 +157,19 @@ def make_client(name, class_, protocol):
 
 
 def make_server(name, class_, protocol):
+    """
+    Create a WebSocket server factory (subclass of :class:`ServerBase`),
+    subclassing from the given class.
+
+    :param class_:  The class to subclass the container from.
+    :type class_:  type
+    :param protocol:  The class to subclass the protocol from.
+    :type protocol:  type
+
+    :returns:  The WebSocket server factory
+    :rtype:  type
+
+    """
     Protocol = type(
         'ServerBase',
         (protocol, websocket.WebSocketServerProtocol),
