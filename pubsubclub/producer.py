@@ -12,6 +12,12 @@ class ProducerProtocol(ProtocolBase):
     """
     SUPPORTED_VERSIONS = [(1, 0)]
 
+    def onConnect(self):
+        print('Start handshake.')
+
+    def onOpen(self):
+        print('Start handshake.')
+
     def onDeclaredVersions(self, *versions):
         """
         Once the consumer has declared the versions it supports, select the
@@ -35,8 +41,10 @@ class ProducerProtocol(ProtocolBase):
 
 
 class Producer(object):
+    """
     def __init__(self, *args, **kwargs):
-        super(Producer, self).__init__(self, *args, **kwargs)
+        super(Producer, self).__init__(*args, **kwargs)
+    """
 
     def publish(self):
         """

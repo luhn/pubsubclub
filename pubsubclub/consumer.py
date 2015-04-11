@@ -12,13 +12,16 @@ class ConsumerProtocol(ProtocolBase):
     """
     SUPPORTED_VERSIONS = [(1, 0)]
 
+    def onConnect(self):
+        print('Start handshake.')
+
     def onOpen(self):
         """
         Upon completing the WebSocket handshake, start the PubSubClub
         handshake.
 
         """
-        pass
+        print('Start handshake.')
 
     def onVersionChosen(self, version):
         """

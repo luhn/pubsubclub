@@ -19,20 +19,23 @@ class ProtocolBase(object):
         301: 'onPublish',
     }
 
-    def connectionMade(self):
+    def onOpen(self):
         """
         When a connection is made, remove node from ``starting_nodes`` (if
         applicable) and put it in ``nodes``
 
         """
+        print('Made')
         self.factory.nodes.add(self)
 
-    def connectionLost(self):
+    def onClose(self, *args):
         """
         When the connection is lost, remove nodes from the list.
 
         """
-        self.factory.nodes.remove(self)
+        print('Lost')
+        print(args)
+        self.factory.nodes.discard(self)
         self.factory.ready_nodes.discard(self)
 
     def onMessage(self, payload, is_binary):
@@ -40,6 +43,7 @@ class ProtocolBase(object):
         Receive and parse an incoming action.
 
         """
+        print('Message')
         obj = json.loads(payload)
         action, params = obj[0], obj[1:]
         callback = self.CALLBACK_MAP[action]
@@ -50,6 +54,7 @@ class ProtocolBase(object):
         Trigger an action to send to the other party.
 
         """
+        print('Send')
         serialized = json.dumps([action] + params)
         self.sendMessage(serialized)
 
@@ -58,6 +63,7 @@ class ProtocolBase(object):
         Mark this connection as having successfully shook hands.
 
         """
+        print('Ready')
         self.factory.ready_nodes.add(self)
 
 
@@ -108,7 +114,9 @@ class ClientBase(object):
             self.connect(host, port)
 
     def connect(self, host, port):
-        pass
+        url = 'ws://{}:{}/'.format(host, port)
+        factory = self.factory(url, debug=True)
+        websocket.connectWS(factory)
 
 
 class ServerBase(websocket.WebSocketServerFactory):
@@ -121,7 +129,9 @@ class ServerBase(websocket.WebSocketServerFactory):
     def __init__(self, interface, port):
         self.nodes = set()
         self.ready_nodes = set()
-        super(ServerBase, self).__init__()  # TODO:  Initialize factory
+        url = 'ws://{}:{}/'.format(interface, port)
+        websocket.WebSocketServerFactory.__init__(self, url, debug=True, debugCodePaths=True)
+        websocket.listenWS(self)
 
 
 def make_client(name, class_, protocol):
@@ -150,7 +160,7 @@ def make_client(name, class_, protocol):
     )
     Client = type(
         'Client',
-        (class_, ClientBase),
+        (ClientBase, class_),
         {'factory': Factory},
     )
     return Client
@@ -177,7 +187,7 @@ def make_server(name, class_, protocol):
     )
     Server = type(
         'Server',
-        (class_, ServerBase),
+        (ServerBase, class_),
         {'protocol': Protocol},
     )
     return Server

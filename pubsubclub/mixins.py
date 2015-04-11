@@ -4,9 +4,10 @@ The following classes are mixins in for a subclass of
 integrates PubSubClub into your WAMP application.
 
 """
+from autobahn.wamp1 import protocol as wamp
 
 
-class ProducerMixin(object):
+class ProducerMixin(wamp.WampServerFactory):
     """
     A mixin to integrate a producer into the application.  Subclass this
     alongside :class:`autobahn.wamp1.protocol.WampServerFactory`.
@@ -28,7 +29,7 @@ class ProducerMixin(object):
         )
 
 
-class ConsumerMixin(object):
+class ConsumerMixin(wamp.WampServerFactory):
     """
     A mixin to integrate a consumer into the application.  Subclass this
     alongside :class:`autobahn.wamp1.protocol.WampServerFactory`.
