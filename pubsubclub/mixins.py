@@ -4,6 +4,8 @@ The following classes are mixins in for a subclass of
 integrates PubSubClub into your WAMP application.
 
 """
+import logging
+
 from autobahn.wamp1 import protocol as wamp
 
 
@@ -23,9 +25,10 @@ class ProducerMixin(wamp.WampServerFactory):
         the other nodes with subscribed users.
 
         """
-        self.producer.dispatch(topic, event)
-        return super(ProducerMixin, self).dispatch(
-            topic, event, exclude, eligible,
+        logging.info('Received dispatch, distributing to nodes.')
+        self.producer.publish(topic, event)
+        return wamp.WampServerFactory.dispatch(
+            self, topic, event, exclude, eligible,
         )
 
 
@@ -45,18 +48,26 @@ class ConsumerMixin(wamp.WampServerFactory):
     def onClientSubscribed(self, protocol, topic):
         """
         When a user has subscribed, check to see if it's the first
-        subscription.  If it is, send a subscription request to the publishers.
+        subscription.  If it is, send a subscription request to the producers.
 
         """
+        logging.info('Received subscription request for %s'.format(topic))
         if self.subscriptions[topic] == 1:  # First subscription
+            logging.info('Forwarding subscription to producers.')
             self.consumer.subscribe(topic)
+        else:
+            logging.info('Already subscribed on producers.  Ignoring request.')
 
     def onClientUnsubscribed(self, protocol, topic):
         """
         When a user has unsubscribed, check to see if it's the last user
         subscribed to the topic.  If it is, send a subscription request to the
-        publisher.
+        producer.
 
         """
+        logging.info('Received unsubscription request for %s'.format(topic))
         if topic not in self.subscriptions:
+            logging.info('Forwarding unsubscription to producers.')
             self.consumer.unsubscribe(topic)
+        else:
+            logging.info('Still some subscribed users.  Ingoring request.')

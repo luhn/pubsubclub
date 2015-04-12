@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import logging
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.internet.task import deferLater
@@ -23,7 +25,7 @@ def test_basic():
     # Awful (but simple) way of making sure handshake is complete
     handshake = deferLater(reactor, 0.5, lambda: None)
     # Ordering the things to do
-    consumer_client_subscribe = Deferred()
+    consumer_client_subscribe = handshake
     publisher_dispatch = Deferred()
 
     # All the events that should be triggered
@@ -74,7 +76,6 @@ def test_basic():
 
     class WampConsumerClientProtocol(wamp.WampClientProtocol):
         def onSessionOpen(self):
-            print(4)
             consumer_client_subscribe.addCallback(
                 lambda _: self.subscribe(
                     'http://example.com/mytopic', self.onEvent,
@@ -101,21 +102,23 @@ def test_basic():
     ])
     WampProducerServerFactory.producer = producer
 
-    """
     listenWS(WampProducerServerFactory('ws://localhost:19001'))
     connectWS(WampProducerClientFactory('ws://localhost:19001'))
 
     listenWS(WampConsumerServerFactory('ws://localhost:19002'))
     connectWS(WampConsumerClientFactory('ws://localhost:19002'))
-    """
 
     return DeferredList([
+        consumer_client_subscribe,
+        publisher_dispatch,
         producer_pubsub_received,
         consumer_pubsub_received,
     ])
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     d = test_basic()
 
     def errback(err):

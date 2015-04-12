@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import logging
+
 from .base import ProtocolBase, make_client, make_server
 
 
@@ -10,10 +12,8 @@ class ConsumerProtocol(ProtocolBase):
     :class:`autobahn.twisted.websocket.WebSocketServerProtocol`.
 
     """
-    SUPPORTED_VERSIONS = [(1, 0)]
-
-    def onConnect(self):
-        print('Start handshake.')
+    ROLE = 'consumer'
+    SUPPORTED_VERSIONS = {(1, 0)}
 
     def onOpen(self):
         """
@@ -21,7 +21,14 @@ class ConsumerProtocol(ProtocolBase):
         handshake.
 
         """
-        print('Start handshake.')
+        logging.info('consumer:  Connected to producer')
+        logging.info(
+            'consumer:  Declaring implemented versions: %s (PSC101)',
+            ', '.join(
+                '{}.{}'.format(*item) for item in self.SUPPORTED_VERSIONS
+            ),
+        )
+        self.send(101, *[list(item) for item in self.SUPPORTED_VERSIONS])
 
     def onVersionChosen(self, version):
         """
@@ -29,7 +36,8 @@ class ConsumerProtocol(ProtocolBase):
         subscribers.
 
         """
-        pass
+        logging.info('consumer:  Version %s chosen.', '{}.{}'.format(*version))
+        self.ready()
 
     def onPublish(self, topic, message):
         """
@@ -48,7 +56,7 @@ class Consumer(object):
         :type topic:  str
 
         """
-        pass
+        logging.info('consumer:  Subscribing to %s', topic)
 
     def unsubscribe(self, topic):
         """
@@ -58,7 +66,7 @@ class Consumer(object):
         :type topic:  str
 
         """
-        pass
+        logging.info('consumer:  Unsubscriber from %s', topic)
 
 
 ConsumerClient = make_client('ConsumerClient', Consumer, ConsumerProtocol)

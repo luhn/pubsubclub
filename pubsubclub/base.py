@@ -1,4 +1,5 @@
 import json
+import logging
 
 from twisted.internet.protocol import ReconnectingClientFactory
 
@@ -19,22 +20,23 @@ class ProtocolBase(object):
         301: 'onPublish',
     }
 
-    def onOpen(self):
+    def onConnect(self, request):
         """
         When a connection is made, remove node from ``starting_nodes`` (if
         applicable) and put it in ``nodes``
 
         """
-        print('Made')
         self.factory.nodes.add(self)
 
-    def onClose(self, *args):
+    def onClose(self, clean, code, reason):
         """
         When the connection is lost, remove nodes from the list.
 
         """
-        print('Lost')
-        print(args)
+        if not clean:
+            logging.warn('Lost connection!')
+        else:
+            logging.info('Connection closed.  Discarding self from nodes.')
         self.factory.nodes.discard(self)
         self.factory.ready_nodes.discard(self)
 
@@ -43,7 +45,7 @@ class ProtocolBase(object):
         Receive and parse an incoming action.
 
         """
-        print('Message')
+        logging.info('%s:  Received message:  %s', self.ROLE, payload)
         obj = json.loads(payload)
         action, params = obj[0], obj[1:]
         callback = self.CALLBACK_MAP[action]
@@ -54,16 +56,16 @@ class ProtocolBase(object):
         Trigger an action to send to the other party.
 
         """
-        print('Send')
-        serialized = json.dumps([action] + params)
-        self.sendMessage(serialized)
+        serialized = json.dumps([action] + list(params))
+        logging.info('%s: Sending message:  %s', self.ROLE, serialized)
+        self.sendMessage(serialized, False)
 
     def ready(self):
         """
         Mark this connection as having successfully shook hands.
 
         """
-        print('Ready')
+        logging.info('%s:  Marking connection as ready.', self.ROLE)
         self.factory.ready_nodes.add(self)
 
 
