@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import logging
 
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredList
@@ -34,7 +33,6 @@ def test_basic():
 
     class WampProducerServerProtocol(wamp.WampServerProtocol):
         def onSessionOpen(self):
-            print(1)
             self.registerForPubSub('http://example.com/mytopic')
             publisher_dispatch.addCallback(
                 lambda _: self.dispatch(
@@ -53,11 +51,9 @@ def test_basic():
 
     class WampProducerClientProtocol(wamp.WampClientProtocol):
         def onSessionOpen(self):
-            print(2)
             self.subscribe('http://example.com/mytopic', self.onEvent)
 
         def onEvent(self, topic, event):
-            print(3)
             try:
                 assert topic == 'http://example.com/mytopic'
                 assert event == {'a': 'b'}
@@ -69,7 +65,8 @@ def test_basic():
         protocol = WampProducerClientProtocol
 
     class WampConsumerServerProtocol(wamp.WampServerProtocol):
-        pass
+        def onSessionOpen(self):
+            self.registerForPubSub('http://example.com/mytopic')
 
     class WampConsumerServerFactory(ConsumerMixin, wamp.WampServerFactory):
         protocol = WampConsumerServerProtocol
@@ -81,10 +78,11 @@ def test_basic():
                     'http://example.com/mytopic', self.onEvent,
                 )
             )
-            consumer_client_subscribe.chainDeferred(publisher_dispatch)
+            consumer_client_subscribe.addCallback(
+                lambda _: deferLater(reactor, 0.5, lambda: None)
+            ).chainDeferred(publisher_dispatch)
 
         def onEvent(self, topic, event):
-            print(5)
             try:
                 assert topic == 'http://example.com/mytopic'
                 assert event == {'a': 'b'}
@@ -105,7 +103,9 @@ def test_basic():
     listenWS(WampProducerServerFactory('ws://localhost:19001'))
     connectWS(WampProducerClientFactory('ws://localhost:19001'))
 
-    listenWS(WampConsumerServerFactory('ws://localhost:19002'))
+    consumer_server = WampConsumerServerFactory('ws://localhost:19002')
+    listenWS(consumer_server)
+    consumer.processor = consumer_server
     connectWS(WampConsumerClientFactory('ws://localhost:19002'))
 
     return DeferredList([
@@ -117,7 +117,8 @@ def test_basic():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    import logging
+    logging.basicConfig(level=logging.ERROR)
 
     d = test_basic()
 

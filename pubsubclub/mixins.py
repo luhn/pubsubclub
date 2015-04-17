@@ -51,8 +51,8 @@ class ConsumerMixin(wamp.WampServerFactory):
         subscription.  If it is, send a subscription request to the producers.
 
         """
-        logging.info('Received subscription request for %s'.format(topic))
-        if self.subscriptions[topic] == 1:  # First subscription
+        logging.info('Received subscription request for %s', topic)
+        if len(self.subscriptions[topic]) == 1:  # First subscription
             logging.info('Forwarding subscription to producers.')
             self.consumer.subscribe(topic)
         else:
@@ -65,7 +65,7 @@ class ConsumerMixin(wamp.WampServerFactory):
         producer.
 
         """
-        logging.info('Received unsubscription request for %s'.format(topic))
+        logging.info('Received unsubscription request for %s', topic)
         if topic not in self.subscriptions:
             logging.info('Forwarding unsubscription to producers.')
             self.consumer.unsubscribe(topic)

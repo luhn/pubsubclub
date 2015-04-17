@@ -75,7 +75,8 @@ class ProducerProtocol(ProtocolBase):
         Check if subscribed to topic.  If we are, send message.
 
         """
-        pass
+        if topic in self.subscriptions:
+            self.send(301, topic, message)
 
 
 class Producer(object):

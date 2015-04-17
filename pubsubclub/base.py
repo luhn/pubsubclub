@@ -96,6 +96,10 @@ class ClientFactory(
     def ready_nodes(self):
         return self.container.ready_nodes
 
+    @property
+    def processor(self):
+        return self.container.processor
+
 
 class ClientBase(object):
     #: The client factory.  Use for connecting to a server.
@@ -108,6 +112,10 @@ class ClientBase(object):
     #: :ivar:`nodes`
     ready_nodes = None
 
+    #: For consumers only, a WAMP class which forwards consumed data to the end
+    #: users.
+    processor = None
+
     def __init__(self, nodes=tuple()):
         self.factory.container = self
         self.nodes = set()
@@ -117,7 +125,7 @@ class ClientBase(object):
 
     def connect(self, host, port):
         url = 'ws://{}:{}/'.format(host, port)
-        factory = self.factory(url, debug=True)
+        factory = self.factory(url)
         websocket.connectWS(factory)
 
 
@@ -128,11 +136,15 @@ class ServerBase(websocket.WebSocketServerFactory):
     #: Nodes that have completed the PubSubClub Protocol handstake
     ready_nodes = None
 
+    #: For consumers only, a WAMP class which forwards consumed data to the end
+    #: users.
+    processor = None
+
     def __init__(self, interface, port):
         self.nodes = set()
         self.ready_nodes = set()
         url = 'ws://{}:{}/'.format(interface, port)
-        websocket.WebSocketServerFactory.__init__(self, url, debug=True, debugCodePaths=True)
+        websocket.WebSocketServerFactory.__init__(self, url)
         websocket.listenWS(self)
 
 

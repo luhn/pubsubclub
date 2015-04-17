@@ -44,7 +44,12 @@ class ConsumerProtocol(ProtocolBase):
         Receive a pubsub and dispatch it to the end users.
 
         """
-        pass
+        logging.info('here')
+        try:
+            self.factory.processor.dispatch(topic, message)
+        except:
+            import traceback
+            traceback.print_exc()
 
 
 class Consumer(object):
@@ -56,7 +61,9 @@ class Consumer(object):
         :type topic:  str
 
         """
-        logging.info('consumer:  Subscribing to %s', topic)
+        logging.info('consumer:  Subscribing to %s (PCS201)', topic)
+        for node in self.ready_nodes:
+            node.send(201, topic)
 
     def unsubscribe(self, topic):
         """
@@ -66,7 +73,9 @@ class Consumer(object):
         :type topic:  str
 
         """
-        logging.info('consumer:  Unsubscriber from %s', topic)
+        logging.info('consumer:  Unsubscriber from %s (PCS202)', topic)
+        for node in self.ready_nodes:
+            node.send(202, topic)
 
 
 ConsumerClient = make_client('ConsumerClient', Consumer, ConsumerProtocol)
