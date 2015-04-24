@@ -36,7 +36,8 @@ class ProducerProtocol(ProtocolBase):
         mutual_versions = version_set & self.SUPPORTED_VERSIONS
         if not mutual_versions:
             logging.error(
-                'producer:  No mutually supported versions, aborting connection.'
+                'producer:  No mutually supported versions, aborting'
+                + ' connection.'
             )
             self.sendClose()
             return
