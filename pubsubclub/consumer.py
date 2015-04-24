@@ -1,6 +1,11 @@
 from __future__ import absolute_import
 
+import sys
 import logging
+import random
+
+from twisted.internet import reactor
+from twisted.internet.task import deferLater
 
 from .base import ProtocolBase, make_client, make_server
 
@@ -14,6 +19,7 @@ class ConsumerProtocol(ProtocolBase):
     """
     ROLE = 'consumer'
     SUPPORTED_VERSIONS = {(1, 0)}
+    pong_received = True
 
     def onOpen(self):
         """
@@ -30,6 +36,19 @@ class ConsumerProtocol(ProtocolBase):
         )
         self.send(101, *[list(item) for item in self.SUPPORTED_VERSIONS])
 
+    def ping(self):
+        if self.pong_received is False:
+            sys.stderr.write('Lost connection!\n')
+            sys.stderr.flush()
+            self.transport.loseConnection()
+            return
+        self.pong_received = False
+        self.sendPing()
+        deferLater(reactor, random.uniform(3.0, 7.0), self.ping)
+
+    def onPong(self, _):
+        self.pong_received = True
+
     def onVersionChosen(self, version):
         """
         Once the publisher chooses the version, start sending over all the
@@ -38,6 +57,7 @@ class ConsumerProtocol(ProtocolBase):
         """
         logging.info('consumer:  Version %s chosen.', '{}.{}'.format(*version))
         self.ready()
+        self.ping()
 
     def onPublish(self, topic, message):
         """
