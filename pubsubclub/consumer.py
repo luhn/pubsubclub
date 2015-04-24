@@ -59,6 +59,10 @@ class ConsumerProtocol(ProtocolBase):
         self.ready()
         self.ping()
 
+        # Start sending out all existing subscriptions
+        for topic in self.factory.processor.subscriptions.iterkeys():
+            self.send(201, topic)
+
     def onPublish(self, topic, message):
         """
         Receive a pubsub and dispatch it to the end users.

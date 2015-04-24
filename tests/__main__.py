@@ -21,6 +21,7 @@ def test_basic():
     Test a simple one-to-one connection with WAMP pubsub.
 
     """
+    print('Running test_basic')
     # Awful (but simple) way of making sure handshake is complete
     handshake = deferLater(reactor, 0.5, lambda: None)
     # Ordering the things to do
@@ -116,11 +117,121 @@ def test_basic():
     ])
 
 
+def test_connect_replay():
+    """
+    Test that when a producer connects, the consumer sends all existing
+    subscription to it.
+
+    """
+    print('Running test_connect_replay')
+    handshake = deferLater(reactor, 0.5, lambda: None)
+
+    producer_connect = handshake
+    publisher_dispatch = Deferred()
+
+    # Events that should be triggered
+    producer_pubsub_received = Deferred()
+    client1_pubsub_received = Deferred()
+    client2_pubsub_received = Deferred()
+
+    class WampProducerServerProtocol(wamp.WampServerProtocol):
+        def onSessionOpen(self):
+            self.registerForPubSub('http://example.com/mytopic')
+            publisher_dispatch.addCallback(
+                lambda _: self.dispatch(
+                    'http://example.com/mytopic', {'a': 'b'},
+                )
+            )
+
+    class WampProducerServerFactory(ProducerMixin, wamp.WampServerFactory):
+        protocol = WampProducerServerProtocol
+
+    class WampProducerClientProtocol(wamp.WampClientProtocol):
+        def onSessionOpen(self):
+            self.subscribe('http://example.com/mytopic', self.onEvent)
+
+        def onEvent(self, topic, event):
+            try:
+                assert topic == 'http://example.com/mytopic'
+                assert event == {'a': 'b'}
+                producer_pubsub_received.callback(None)
+            except:
+                producer_pubsub_received.errback()
+
+    class WampProducerClientFactory(wamp.WampClientFactory):
+        protocol = WampProducerClientProtocol
+
+    class WampConsumerServerProtocol(wamp.WampServerProtocol):
+        def onSessionOpen(self):
+            self.registerForPubSub('http://example.com/mytopic')
+
+    class WampConsumerServerFactory(ConsumerMixin, wamp.WampServerFactory):
+        protocol = WampConsumerServerProtocol
+
+    class WampConsumerClient1Protocol(wamp.WampClientProtocol):
+        def onSessionOpen(self):
+            self.subscribe('http://example.com/mytopic', self.onEvent)
+            self.subscribe('http://example.com/mytopic2', self.onEvent)
+
+        def onEvent(self, topic, event):
+            try:
+                assert topic == 'http://example.com/mytopic'
+                assert event == {'a': 'b'}
+                client1_pubsub_received.callback(None)
+            except:
+                client1_pubsub_received.errback()
+
+    class WampConsumerClient1Factory(wamp.WampClientFactory):
+        protocol = WampConsumerClient1Protocol
+
+    class WampConsumerClient2Protocol(wamp.WampClientProtocol):
+        def onSessionOpen(self):
+            self.subscribe('http://example.com/mytopic', self.onEvent)
+
+        def onEvent(self, topic, event):
+            try:
+                assert topic == 'http://example.com/mytopic'
+                assert event == {'a': 'b'}
+                client2_pubsub_received.callback(None)
+            except:
+                client2_pubsub_received.errback()
+
+    class WampConsumerClient2Factory(wamp.WampClientFactory):
+        protocol = WampConsumerClient2Protocol
+
+    consumer = ConsumerServer('localhost', 19100)
+    WampConsumerServerFactory.consumer = consumer
+    producer = ProducerClient([])
+    WampProducerServerFactory.producer = producer
+    producer_connect.addCallback(
+        lambda _: producer.connect('localhost', 19100)
+    )
+    producer_connect.addCallback(
+        lambda _: deferLater(reactor, 0.5, lambda: None),
+    ).chainDeferred(publisher_dispatch)
+
+    listenWS(WampProducerServerFactory('ws://localhost:19101'))
+    connectWS(WampProducerClientFactory('ws://localhost:19101'))
+
+    consumer_server = WampConsumerServerFactory('ws://localhost:19102')
+    listenWS(consumer_server)
+    consumer.processor = consumer_server
+    connectWS(WampConsumerClient1Factory('ws://localhost:19102'))
+    connectWS(WampConsumerClient2Factory('ws://localhost:19102'))
+
+    return DeferredList([
+        producer_pubsub_received,
+        client1_pubsub_received,
+        client2_pubsub_received,
+    ])
+
+
 if __name__ == '__main__':
     import logging
-    logging.basicConfig(level=logging.ERROR)
+    logging.basicConfig(level=logging.INFO)
 
     d = test_basic()
+    d.addCallback(lambda _: test_connect_replay())
 
     def errback(err):
         # On error, print and then exit with a 2
