@@ -105,6 +105,9 @@ class ClientBase(object):
     #: The client factory.  Use for connecting to a server.
     factory = None
 
+    #: A :class:`dict` of :class:`ProtocolBase` for each connection to a node.
+    connections = None
+
     #: A :class:`set` of :class:`ProtocolBase` for each connection to a node.
     nodes = None
 
@@ -120,13 +123,37 @@ class ClientBase(object):
         self.factory.container = self
         self.nodes = set()
         self.ready_nodes = set()
+        self.connections = dict()
         for host, port in nodes:
             self.connect(host, port)
 
     def connect(self, host, port):
+        """
+        Make a connection to a server.
+
+        """
+        key = (host, port)
+        if key in self.connections:
+            logging.warn(
+                'Already connected to {}:{}!  Will not connect again.'
+                .format(host, port)
+            )
+            return
         url = 'ws://{}:{}/'.format(host, port)
-        factory = self.factory(url)
+        factory = self.connections[(host, port)] = self.factory(url)
         websocket.connectWS(factory)
+
+    def disconnect(self, host, port):
+        """
+        Lose a previously made connection.
+
+        """
+        try:
+            self.connections[(host, port)].protocol.close()
+        except KeyError:
+            logging.warn(
+                'Could not find connection to {}:{}.'.format(host, port)
+            )
 
 
 class ServerBase(websocket.WebSocketServerFactory):
