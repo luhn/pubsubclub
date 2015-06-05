@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Consul Test</title>
+	</head>
+	<body>
+		<form id="connect">
+			<input type="text" name="uri" placeholder="WSURI" />
+			<button type="submit">Connect</button>
+		</form>
+		<form id="subscribe">
+			<input type="text" name="uri" placeholder="URI" />
+			<button type="submit">Subscribe</button>
+		</form>
+		<form id="publish">
+			<input type="text" name="uri" placeholder="URI" />
+			<input type="text" name="content" placeholder="Content" />
+			<button type="submit">Publish</button>
+		</form>
+		<ul id="log"></ul>
+
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+		<script type="text/javascript" src="autobahn.js"></script>
+		<script type="text/javascript" src="main.js"></script>
+	</body>
+</html>

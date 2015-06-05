@@ -1,0 +1,10 @@
+{
+    "bootstrap_expect": 4,
+    "server": true,
+    "data_dir": "/var/consul",
+		"start_join": ["192.168.50.100"],
+		"service": {
+			"name": "pubsubclub",
+			"port": 19000
+		}
+}
