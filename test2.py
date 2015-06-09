@@ -14,7 +14,7 @@ class WampServerProtocol(wamp.WampServerProtocol):
         self.registerForPubSub('http://example.com/mytopic')
 
     @wamp.exportRpc('publish')
-    def _publish(self, data):
+    def publish(self, data):
         try:
             self.dispatch(
                 data['channel'],
@@ -39,14 +39,14 @@ if __name__ == '__main__':
     import sys
     log.startLogging(sys.stderr)
 
-    consumer = ConsumerServer('0.0.0.0', 19000)
+    consumer = ConsumerServer('0.0.0.0', 19001)
     WampServerFactory.consumer = consumer
     producer = ProducerClient([
-        ('127.0.0.1', 19001),
+        ('127.0.0.1', 19000),
     ])
     WampServerFactory.producer = producer
 
-    server = WampServerFactory('ws://localhost:9900')
+    server = WampServerFactory('ws://localhost:9901')
     listenWS(server)
     consumer.processor = server
 

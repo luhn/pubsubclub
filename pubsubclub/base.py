@@ -1,6 +1,6 @@
 import json
-import logging
 
+from twisted.python import log
 from twisted.internet.protocol import ReconnectingClientFactory
 
 from autobahn.twisted import websocket
@@ -33,10 +33,12 @@ class ProtocolBase(object):
         When the connection is lost, remove nodes from the list.
 
         """
+        log.msg(code)
+        log.msg(reason)
         if not clean:
-            logging.warn('Lost connection!')
+            log.msg('Lost connection!')
         else:
-            logging.info('Connection closed.  Discarding self from nodes.')
+            log.msg('Connection closed.  Discarding self from nodes.')
         self.factory.nodes.discard(self)
         self.factory.ready_nodes.discard(self)
 
@@ -45,7 +47,7 @@ class ProtocolBase(object):
         Receive and parse an incoming action.
 
         """
-        logging.info('%s:  Received message:  %s', self.ROLE, payload)
+        log.msg('%s:  Received message:  %s', self.ROLE, payload)
         obj = json.loads(payload)
         action, params = obj[0], obj[1:]
         callback = self.CALLBACK_MAP[action]
@@ -57,7 +59,7 @@ class ProtocolBase(object):
 
         """
         serialized = json.dumps([action] + list(params))
-        logging.info('%s: Sending message:  %s', self.ROLE, serialized)
+        log.msg('%s: Sending message:  %s', self.ROLE, serialized)
         self.sendMessage(serialized, False)
 
     def ready(self):
@@ -65,7 +67,7 @@ class ProtocolBase(object):
         Mark this connection as having successfully shook hands.
 
         """
-        logging.info('%s:  Marking connection as ready.', self.ROLE)
+        log.msg('%s:  Marking connection as ready.', self.ROLE)
         self.factory.ready_nodes.add(self)
 
 
@@ -134,7 +136,7 @@ class ClientBase(object):
         """
         key = (host, port)
         if key in self.connections:
-            logging.warn(
+            log.msg(
                 'Already connected to {}:{}!  Will not connect again.'
                 .format(host, port)
             )
@@ -151,7 +153,7 @@ class ClientBase(object):
         try:
             self.connections[(host, port)].protocol.close()
         except KeyError:
-            logging.warn(
+            log.msg(
                 'Could not find connection to {}:{}.'.format(host, port)
             )
 

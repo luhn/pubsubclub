@@ -4,12 +4,12 @@ The following classes are mixins in for a subclass of
 integrates PubSubClub into your WAMP application.
 
 """
-import logging
+from twisted.python import log
 
 from autobahn.wamp1 import protocol as wamp
 
 
-class ProducerMixin(wamp.WampServerFactory):
+class ProducerMixin:
     """
     A mixin to integrate a producer into the application.  Subclass this
     alongside :class:`autobahn.wamp1.protocol.WampServerFactory`.
@@ -25,14 +25,14 @@ class ProducerMixin(wamp.WampServerFactory):
         the other nodes with subscribed users.
 
         """
-        logging.info('Received dispatch, distributing to nodes.')
+        log.msg('Received dispatch, distributing to nodes.')
         self.producer.publish(topic, event)
         return wamp.WampServerFactory.dispatch(
             self, topic, event, exclude, eligible,
         )
 
 
-class ConsumerMixin(wamp.WampServerFactory):
+class ConsumerMixin:
     """
     A mixin to integrate a consumer into the application.  Subclass this
     alongside :class:`autobahn.wamp1.protocol.WampServerFactory`.
@@ -51,12 +51,12 @@ class ConsumerMixin(wamp.WampServerFactory):
         subscription.  If it is, send a subscription request to the producers.
 
         """
-        logging.info('Received subscription request for %s', topic)
+        log.msg('Received subscription request for %s', topic)
         if len(self.subscriptions[topic]) == 1:  # First subscription
-            logging.info('Forwarding subscription to producers.')
+            log.msg('Forwarding subscription to producers.')
             self.consumer.subscribe(topic)
         else:
-            logging.info('Already subscribed on producers.  Ignoring request.')
+            log.msg('Already subscribed on producers.  Ignoring request.')
 
     def onClientUnsubscribed(self, protocol, topic):
         """
@@ -65,9 +65,9 @@ class ConsumerMixin(wamp.WampServerFactory):
         producer.
 
         """
-        logging.info('Received unsubscription request for %s', topic)
+        log.msg('Received unsubscription request for %s', topic)
         if topic not in self.subscriptions:
-            logging.info('Forwarding unsubscription to producers.')
+            log.msg('Forwarding unsubscription to producers.')
             self.consumer.unsubscribe(topic)
         else:
-            logging.info('Still some subscribed users.  Ingoring request.')
+            log.msg('Still some subscribed users.  Ingoring request.')

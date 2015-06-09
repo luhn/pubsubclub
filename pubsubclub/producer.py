@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-import logging
+from twisted.python import log
 
 from .base import ProtocolBase, make_client, make_server
 
@@ -17,7 +17,7 @@ class ProducerProtocol(ProtocolBase):
     subscriptions = None
 
     def onOpen(self):
-        logging.info('producer:  Connected to consumer')
+        log.msg('producer:  Connected to consumer')
         self.subscriptions = set()
 
     def onDeclaredVersions(self, *versions):
@@ -26,7 +26,7 @@ class ProducerProtocol(ProtocolBase):
         one we want to use.
 
         """
-        logging.info(
+        log.msg(
             'producer:  Received implemented versions: %s',
             ', '.join(
                 '{}.{}'.format(*item) for item in versions
@@ -35,20 +35,20 @@ class ProducerProtocol(ProtocolBase):
         version_set = {tuple(item) for item in versions}
         mutual_versions = version_set & self.SUPPORTED_VERSIONS
         if not mutual_versions:
-            logging.error(
+            log.msg(
                 'producer:  No mutually supported versions, aborting'
                 + ' connection.'
             )
             self.sendClose()
             return
-        logging.info(
+        log.msg(
             'producer:  Mutually supported versions:  %s',
             ', '.join(
                 '{}.{}'.format(*item) for item in mutual_versions
             ),
         )
         selected = sorted(mutual_versions)[0]
-        logging.info(
+        log.msg(
             'producer:  Selecting %s as version.',
             '{}.{}'.format(*selected),
         )
@@ -60,7 +60,7 @@ class ProducerProtocol(ProtocolBase):
         Subscribe a consumer to a topic.
 
         """
-        logging.info('producer:  Subscribing to %s', topic)
+        log.msg('producer:  Subscribing to %s', topic)
         self.subscriptions.add(topic)
 
     def onUnsubscribe(self, topic):
@@ -68,7 +68,7 @@ class ProducerProtocol(ProtocolBase):
         Unsubscribe a consumer from a topic.
 
         """
-        logging.info('producer:  Unsubscribing to %s', topic)
+        log.msg('producer:  Unsubscribing to %s', topic)
         self.subscriptions.remove(topic)
 
     def publish(self, topic, message):
@@ -76,8 +76,11 @@ class ProducerProtocol(ProtocolBase):
         Check if subscribed to topic.  If we are, send message.
 
         """
+        log.msg('producer:  Received message %s on %s' % (topic, message))
         if topic in self.subscriptions:
             self.send(301, topic, message)
+        else:
+            log.msg('producer:  Not subscribed, ignoring.')
 
 
 class Producer(object):

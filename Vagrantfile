@@ -49,6 +49,7 @@ Vagrant.configure(2) do |config|
 		box1.vm.network "private_network", ip: "192.168.50.100"
 		box1.vm.provision "shell", privileged: true, inline: <<-SHELL
 			hostname box1
+			hostname > /etc/hostname
 			echo "{\\"bind_addr\\":\\"192.168.50.100\\"}" > /etc/consul.d/bind.json
 			cp /vagrant/consul-leader.json /etc/consul.d/
 			service consul start
@@ -60,6 +61,7 @@ Vagrant.configure(2) do |config|
 		box2.vm.network "private_network", ip: "192.168.50.101"
 		box2.vm.provision "shell", privileged: true, inline: <<-SHELL
 			hostname box2
+			hostname > /etc/hostname
 			echo "{\\"bind_addr\\":\\"192.168.50.101\\"}" > /etc/consul.d/bind.json
 			service consul start
 		SHELL
@@ -69,6 +71,7 @@ Vagrant.configure(2) do |config|
 		box3.vm.network "private_network", ip: "192.168.50.102"
 		box3.vm.provision "shell", privileged: true, inline: <<-SHELL
 			hostname box3
+			hostname > /etc/hostname
 			echo "{\\"bind_addr\\":\\"192.168.50.102\\"}" > /etc/consul.d/bind.json
 			service consul start
 		SHELL
@@ -78,6 +81,7 @@ Vagrant.configure(2) do |config|
 		box4.vm.network "private_network", ip: "192.168.50.103"
 		box4.vm.provision "shell", privileged: true, inline: <<-SHELL
 			hostname box4
+			hostname > /etc/hostname
 			echo "{\\"bind_addr\\":\\"192.168.50.103\\"}" > /etc/consul.d/bind.json
 			service consul start
 		SHELL

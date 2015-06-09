@@ -4,8 +4,10 @@ import sys
 import logging
 import random
 
+from twisted.python import log
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
+from autobahn.wamp1 import protocol as wamp
 
 from .base import ProtocolBase, make_client, make_server
 
@@ -27,8 +29,8 @@ class ConsumerProtocol(ProtocolBase):
         handshake.
 
         """
-        logging.info('consumer:  Connected to producer')
-        logging.info(
+        log.msg('consumer:  Connected to producer')
+        log.msg(
             'consumer:  Declaring implemented versions: %s (PSC101)',
             ', '.join(
                 '{}.{}'.format(*item) for item in self.SUPPORTED_VERSIONS
@@ -55,7 +57,7 @@ class ConsumerProtocol(ProtocolBase):
         subscribers.
 
         """
-        logging.info('consumer:  Version %s chosen.', '{}.{}'.format(*version))
+        log.msg('consumer:  Version %s chosen.', '{}.{}'.format(*version))
         self.ready()
         self.ping()
 
@@ -68,9 +70,14 @@ class ConsumerProtocol(ProtocolBase):
         Receive a pubsub and dispatch it to the end users.
 
         """
-        logging.info('here')
+        log.msg('here')
         try:
-            self.factory.processor.dispatch(topic, message)
+            # We're making the call to the classmethod to prevent an infinite
+            # loop if if two producer/consumer servers are connected to
+            # eachother.
+            wamp.WampServerFactory.dispatch(
+                self.factory.processor, topic, message,
+            )
         except:
             import traceback
             traceback.print_exc()
@@ -85,7 +92,7 @@ class Consumer(object):
         :type topic:  str
 
         """
-        logging.info('consumer:  Subscribing to %s (PCS201)', topic)
+        log.msg('consumer:  Subscribing to %s (PCS201)', topic)
         for node in self.ready_nodes:
             node.send(201, topic)
 
@@ -97,7 +104,7 @@ class Consumer(object):
         :type topic:  str
 
         """
-        logging.info('consumer:  Unsubscriber from %s (PCS202)', topic)
+        log.msg('consumer:  Unsubscriber from %s (PCS202)', topic)
         for node in self.ready_nodes:
             node.send(202, topic)
 

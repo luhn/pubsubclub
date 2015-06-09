@@ -7,7 +7,7 @@ from twisted.web import server, resource
 from twisted.internet import reactor
 from twisted.web.server import NOT_DONE_YET
 
-from pubsubclub.consul import ConsulDiscovery
+from pubsubclub import consul
 
 
 nodes = [
@@ -97,7 +97,9 @@ if __name__ == '__main__':
     site = server.Site(ConsulMock())
     reactor.listenTCP(18101, site)
 
-    discovery = ConsulDiscovery('http://localhost:18101/', 'consul', client)
+    discovery = consul.ConsulDiscovery(
+        'http://localhost:18101/', 'consul', client,
+    )
     discovery.start()
 
     def test_setup():
@@ -112,7 +114,7 @@ if __name__ == '__main__':
 
     def test_change(self):
         """
-        Test
+        Test chn
 
         """
         change_nodes([
@@ -131,7 +133,50 @@ if __name__ == '__main__':
                     '{!r} != {!r}'.format(client.connections, compare)
                 )
 
-        return deferLater(reactor, 0.1, assertions)
+        return deferLater(reactor, consul.DEBOUNCE_PERIOD + 0.1, assertions)
+
+    def test_debounce(self):
+        """
+        Test
+
+        """
+        change_nodes([
+            ('test1', '192.168.1.1', 123),
+            ('test3', '192.168.1.3', 125),
+            ('test4', '192.168.1.4', 321),
+        ])
+
+        def first_test():
+            compare = {
+                ('192.168.1.2', 124),
+                ('192.168.1.3', 125),
+            }
+            if client.connections != compare:
+                raise AssertionError(
+                    '{!r} != {!r}'.format(client.connections, compare)
+                )
+
+            # Change nodes for second test
+            change_nodes([
+                ('test1', '192.168.1.1', 123),
+                ('test3', '192.168.1.3', 125),
+                ('test4', '192.168.1.4', 321),
+            ])
+
+        def second_test():
+            compare = {
+                ('192.168.1.3', 125),
+                ('192.168.1.4', 321),
+            }
+            if client.connections != compare:
+                raise AssertionError(
+                    '{!r} != {!r}'.format(client.connections, compare)
+                )
+
+        d = deferLater(reactor, consul.DEBOUNCE_PERIOD * 2 / 3, first_test)
+        return d.addCallback(lambda _: deferLater(
+            reactor, consul.DEBOUNCE_PERIOD * 2 / 3, second_test
+        ))
 
     d = deferLater(reactor, 0.1, test_setup)
     d.addCallback(lambda _: deferLater(reactor, 0.5, lambda: None))
