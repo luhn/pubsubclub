@@ -12,6 +12,8 @@ class WampServerProtocol(wamp.WampServerProtocol):
         print("Whoa")
         self.registerForRpc(self, "http://example.com/pubsub#")
         self.registerForPubSub('http://example.com/mytopic')
+        self.registerForPubSub('http://example.com/mytopic2')
+        self.registerForPubSub('http://example.com/mytopic3')
 
     @wamp.exportRpc('publish')
     def _publish(self, data):
@@ -41,21 +43,17 @@ if __name__ == '__main__':
 
     consumer = ConsumerServer('0.0.0.0', 19000)
     WampServerFactory.consumer = consumer
-    producer = ProducerClient([
-        ('127.0.0.1', 19001),
-    ])
+    producer = ProducerClient([])
     WampServerFactory.producer = producer
 
     server = WampServerFactory('ws://localhost:9900')
     listenWS(server)
     consumer.processor = server
 
-    """
     discovery = consul.ConsulDiscovery(
         'http://localhost:8500/', 'pubsubclub', producer,
     )
     discovery.start()
-    """
     print('Starting...')
 
     reactor.run()

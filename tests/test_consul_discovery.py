@@ -1,6 +1,6 @@
-import logging
 import json
 
+from twisted.python import log
 from twisted.internet.defer import Deferred
 from twisted.internet.task import deferLater
 from twisted.web import server, resource
@@ -21,7 +21,7 @@ change_index = 0
 
 def change_nodes(new_nodes):
     global nodes, change_index, node_change
-    logging.info('Settings nodes to %s', repr(new_nodes))
+    log.msg('Settings nodes to %s', repr(new_nodes))
     nodes = new_nodes
     change_index += 1
     node_change.callback(None)
@@ -36,36 +36,51 @@ class ConsulMock(resource.Resource):
     isLeaf = True
 
     def render_GET(self, request):
-        logging.info('ConsulMock:  Received request for %s', request.path)
-        if request.path == '/v1/catalog/service/consul':
+        log.msg('ConsulMock:  Received request for %s', request.path)
+        if request.path == '/v1/health/service/consul':
             self._services(request)
             return NOT_DONE_YET
         elif request.path == '/v1/agent/self':
             return self._self(request)
+        else:
+            return 'FATAL'
 
     def _services(self, request):
         def finish_request():
-            logging.info('ConsulMock:  Sending new services.')
+            log.msg('ConsulMock:  Sending new services.')
             response = json.dumps([{
-                'Node': node,
-                'Address': address,
-                'ServiceID': 'pubsub',
-                'ServiceName': 'pubsub',
-                'ServiceTags': None,
-                'ServiceAddress': '',
-                'ServicePort': port,
+                'Node': {
+                    'Node': node,
+                    'Address': address,
+                },
+                'Service': {
+                    'ID': 'pubsub',
+                    'Service': 'pubsub',
+                    'Tags': None,
+                    'Port': port,
+                },
+                'Checks': [{
+                    'Node': node,
+                    'CheckID': 'service:pubsub',
+                    'Name': 'Service \'pubsub\' check',
+                    'Status': 'passing',
+                    'Notes': '',
+                    'Output': '',
+                    'ServiceID': 'pubsub',
+                    'ServiceName': 'pubsub',
+                },],
             } for (node, address, port) in nodes])
-            logging.info('ConsulMock:  Index is %i', change_index)
+            log.msg('ConsulMock:  Index is %i', change_index)
             request.setHeader('X-Consul-Index', str(change_index))
-            logging.info('ConsulMock:  Content is:  %s', response)
+            log.msg('ConsulMock:  Content is:  %s', response)
             request.write(response)
             request.finish()
 
         if 'wait' in request.args:
-            logging.info('ConsulMock:  Waiting for changes.')
+            log.msg('ConsulMock:  Waiting for changes.')
             node_change.addCallback(lambda _: finish_request())
         else:
-            logging.info('ConsulMock:  Not waiting for anything.')
+            log.msg('ConsulMock:  Not waiting for anything.')
             deferLater(reactor, 0.0001, finish_request)
 
     def _self(self, request):
@@ -76,7 +91,7 @@ class ConsulMock(resource.Resource):
                 'Port': 123,
             },
         })
-        logging.info('ConsulMock:  Responding with: %s', response)
+        log.msg('ConsulMock:  Responding with: %s', response)
         return response
 
 
@@ -92,7 +107,8 @@ class ClientMock(object):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    import sys
+    log.startLogging(sys.stdout)
     client = ClientMock()
     site = server.Site(ConsulMock())
     reactor.listenTCP(18101, site)
@@ -142,14 +158,14 @@ if __name__ == '__main__':
         """
         change_nodes([
             ('test1', '192.168.1.1', 123),
-            ('test3', '192.168.1.3', 125),
-            ('test4', '192.168.1.4', 321),
+            ('test3', '192.168.1.2', 125),
+            ('test4', '192.168.1.3', 321),
         ])
 
         def first_test():
             compare = {
-                ('192.168.1.2', 124),
                 ('192.168.1.3', 125),
+                ('192.168.1.4', 321),
             }
             if client.connections != compare:
                 raise AssertionError(
@@ -181,6 +197,8 @@ if __name__ == '__main__':
     d = deferLater(reactor, 0.1, test_setup)
     d.addCallback(lambda _: deferLater(reactor, 0.5, lambda: None))
     d.addCallback(test_change)
+    d.addCallback(lambda _: deferLater(reactor, 0.5, lambda: None))
+    d.addCallback(test_debounce)
 
     def errback(err):
         # On error, print and then exit with a 2

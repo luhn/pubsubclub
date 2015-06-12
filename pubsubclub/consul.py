@@ -13,7 +13,7 @@ from twisted.web.http_headers import Headers
 
 
 POLL_WAIT = '60s'  #: The duration to longpoll
-DEBOUNCE_PERIOD = 30.0
+DEBOUNCE_PERIOD = 1.0
 
 
 class Debouncer(object):
@@ -104,6 +104,14 @@ class HTTPResponse(object):
         if self._json is None:
             self._json = json.loads(self.body)
         return self._json
+
+    def __str__(self):
+        return (
+            'Headers: {!r}\nBody: {}'.format(self.body, self.headers)
+        )
+
+    def __repr__(self):
+        return str(self)
 
 
 def http_request(method, url, headers=dict()):
@@ -222,10 +230,13 @@ class ConsulDiscovery(object):
 
     def requeue(self, _=None):
         run = lambda: self._query_services(wait=POLL_WAIT, debounce=True)
+        """
         if unix_timestamp() - self.last_queued > 5:
             d = deferLater(reactor, 5.0, run)
         else:
             d = run()
+        """
+        d = run()
         self.last_queued = unix_timestamp()
         d.addCallback(self.requeue)
         d.addErrback(self._handle_api_error)
@@ -265,14 +276,17 @@ class ConsulDiscovery(object):
             'ConsulDiscovery:  Querying services with wait of %s',
             wait or 'None',
         )
-        params = {}
+        params = {
+            'passing': '',
+            'pretty': '',
+        }
         if wait:
             params['wait'] = wait
         if self.index:
             params['index'] = self.index
         url = urlunsplit(
             self.consul_url +
-            ('/v1/catalog/service/{}'.format(self.consul_service),
+            ('/v1/health/service/{}'.format(self.consul_service),
              urlencode(params), '')
         )
         log.msg('ConsulDiscovery:  URL is %s', url)
@@ -304,9 +318,11 @@ class ConsulDiscovery(object):
         result = result.json
         log.msg('ConsulDiscovery:  Received response:  %s', repr(result))
         new_nodes = {
-            (service['Address'], service['ServicePort']) for service in result
-            if service['Node'] != self.self
+            (
+                service['Node']['Address'], service['Service']['Port'],
+            ) for service in result if service['Node']['Node'] != self.self
         }
+        log.msg('ConsulDiscovery:  Nodes:  %s', repr(new_nodes))
         # Nodes that have appeared
         for node in new_nodes - self.nodes:
             log.msg('ConsulDiscovery:  Connecting to %s:%s', *node)

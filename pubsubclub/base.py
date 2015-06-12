@@ -142,6 +142,7 @@ class ClientBase(object):
             )
             return
         url = 'ws://{}:{}/'.format(host, port)
+        log.msg('Connecting to %s' % url)
         factory = self.connections[(host, port)] = self.factory(url)
         websocket.connectWS(factory)
 
@@ -173,6 +174,7 @@ class ServerBase(websocket.WebSocketServerFactory):
         self.nodes = set()
         self.ready_nodes = set()
         url = 'ws://{}:{}/'.format(interface, port)
+        log.msg('Listening on %s' % url)
         websocket.WebSocketServerFactory.__init__(self, url)
         websocket.listenWS(self)
 
