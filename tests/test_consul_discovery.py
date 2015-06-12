@@ -19,6 +19,10 @@ node_change = Deferred()
 change_index = 0
 
 
+consul.DEBOUNCE_PERIOD = 1.0
+consul.MIN_QUERY_PERIOD = 0.0
+
+
 def change_nodes(new_nodes):
     global nodes, change_index, node_change
     log.msg('Settings nodes to %s', repr(new_nodes))

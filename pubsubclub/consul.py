@@ -13,7 +13,8 @@ from twisted.web.http_headers import Headers
 
 
 POLL_WAIT = '60s'  #: The duration to longpoll
-DEBOUNCE_PERIOD = 1.0
+DEBOUNCE_PERIOD = 30.0  # How long to wait before applying changes
+MIN_QUERY_PERIOD = 5.0  # Throttle polling if it returns too quickly
 
 
 class Debouncer(object):
@@ -23,9 +24,8 @@ class Debouncer(object):
     time period will overwrite the previous call.
 
     """
-    def __init__(self, func, period):
+    def __init__(self, func):
         self.func = func
-        self.period = period
         self.wait = None
         self.last_args = None
         self.last_kwargs = None
@@ -35,7 +35,7 @@ class Debouncer(object):
             # If we haven't debounced
             if self.wait is None:
                 log.msg('Starting debounce wait.')
-                self.wait = deferLater(reactor, self.period, self._call)
+                self.wait = deferLater(reactor, DEBOUNCE_PERIOD, self._call)
 
             log.msg('Args on deck: %s, %s', repr(args), repr(kwargs))
             self.last_obj = obj
@@ -230,13 +230,10 @@ class ConsulDiscovery(object):
 
     def requeue(self, _=None):
         run = lambda: self._query_services(wait=POLL_WAIT, debounce=True)
-        """
-        if unix_timestamp() - self.last_queued > 5:
-            d = deferLater(reactor, 5.0, run)
+        if unix_timestamp() - self.last_queued < MIN_QUERY_PERIOD:
+            d = deferLater(reactor, MIN_QUERY_PERIOD, run)
         else:
             d = run()
-        """
-        d = run()
         self.last_queued = unix_timestamp()
         d.addCallback(self.requeue)
         d.addErrback(self._handle_api_error)
@@ -333,4 +330,4 @@ class ConsulDiscovery(object):
             self.client.disconnect(*node)
         self.nodes = new_nodes
 
-    _process_services_debounced = Debouncer(_process_services, DEBOUNCE_PERIOD)
+    _process_services_debounced = Debouncer(_process_services)
