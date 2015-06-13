@@ -1,4 +1,5 @@
 import json
+import functools
 from urlparse import urlsplit, urlunsplit
 from urllib import urlencode
 from time import time as unix_timestamp
@@ -107,7 +108,7 @@ class HTTPResponse(object):
 
     def __str__(self):
         return (
-            'Headers: {!r}\nBody: {}'.format(self.body, self.headers)
+            'Headers: {!r}\nBody: {}'.format(self.headers, self.body)
         )
 
     def __repr__(self):
@@ -139,7 +140,7 @@ def http_request(method, url, headers=dict()):
     return request.addCallback(HTTPResponse.from_response)
 
 
-def retry_on_failure(wait, func, *args, **kwargs):
+def retry_on_failure(wait, func=None):
     """
     Retry if the deferred fails.
 
@@ -151,25 +152,32 @@ def retry_on_failure(wait, func, *args, **kwargs):
     :returns:  A Deferred that will return with the succeeded call.
 
     """
-    response = Deferred()
+    if func is None:
+        return functools.partial(retry_on_failure, wait)
 
-    def call():
-        log.msg('Making call with retry.')
-        d = maybeDeferred(func, *args, **kwargs)
-        d.addCallback(response.callback)
-        d.addErrback(retry)
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        response = Deferred()
 
-    def retry(failure):
-        log.msg('HTTP:  Failed with %s, retrying...', failure)
-        reactor.callLater(wait, call)
+        def call():
+            log.msg('Making call with retry.')
+            d = maybeDeferred(func, *args, **kwargs)
+            d.addCallback(response.callback)
+            d.addErrback(retry)
 
-    def callback(result):
-        log.msg('Called back.')
-        return result
+        def retry(failure):
+            log.msg('HTTP:  Failed with %s, retrying...', failure)
+            reactor.callLater(wait, call)
 
-    response.addCallback(callback)
-    call()
-    return response
+        def callback(result):
+            log.msg('Called back.')
+            return result
+
+        response.addCallback(callback)
+        call()
+        return response
+
+    return wrapper
 
 
 class TimeoutError(Exception):
@@ -242,16 +250,14 @@ class ConsulDiscovery(object):
         failure.printTraceback()
         deferLater(reactor, 10.0, self.requeue)
 
+    @retry_on_failure(MIN_QUERY_PERIOD)
     def _query_self(self):
         log.msg('ConsulDiscovery:  Querying for self.')
         url = urlunsplit(
             self.consul_url +
             ('/v1/agent/self', '', '')
         )
-        d = retry_on_failure(
-            10.0,
-            lambda: deferred_timeout(http_request('GET', url), 10.0),
-        )
+        d = deferred_timeout(http_request('GET', url), 10.0)
 
         d.addCallback(self._process_self)
 
@@ -268,6 +274,7 @@ class ConsulDiscovery(object):
         self.self = result['Member']['Name']
         log.msg('ConsulDiscovery:  Set self to %s', self.self)
 
+    @retry_on_failure(MIN_QUERY_PERIOD)
     def _query_services(self, wait=None, debounce=False):
         log.msg(
             'ConsulDiscovery:  Querying services with wait of %s',
@@ -287,11 +294,9 @@ class ConsulDiscovery(object):
              urlencode(params), '')
         )
         log.msg('ConsulDiscovery:  URL is %s', url)
-        d = retry_on_failure(
-            10.0,
-            http_request,
-            'GET',
-            url,
+        d = deferred_timeout(
+            http_request('GET', url),
+            wait * 1.5 if wait else 10.0
         )
 
         callback = (
