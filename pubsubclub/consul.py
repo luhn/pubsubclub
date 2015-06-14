@@ -13,7 +13,7 @@ from twisted.web.client import Agent, readBody
 from twisted.web.http_headers import Headers
 
 
-POLL_WAIT = '60s'  #: The duration to longpoll
+POLL_WAIT = 60  #: The duration to longpoll
 DEBOUNCE_PERIOD = 30.0  # How long to wait before applying changes
 MIN_QUERY_PERIOD = 5.0  # Throttle polling if it returns too quickly
 
@@ -161,6 +161,7 @@ def retry_on_failure(wait, func=None):
 
         def call():
             log.msg('Making call with retry.')
+            log.msg('{!r} {!r}'.format(args, kwargs))
             d = maybeDeferred(func, *args, **kwargs)
             d.addCallback(response.callback)
             d.addErrback(retry)
@@ -285,7 +286,7 @@ class ConsulDiscovery(object):
             'pretty': '',
         }
         if wait:
-            params['wait'] = wait
+            params['wait'] = '{}s'.format(wait)
         if self.index:
             params['index'] = self.index
         url = urlunsplit(
