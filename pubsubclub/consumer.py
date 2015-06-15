@@ -81,32 +81,25 @@ class ConsumerProtocol(ProtocolBase):
             import traceback
             traceback.print_exc()
 
-
-class Consumer(object):
     def subscribe(self, topic):
         """
-        Subscribe to a topic if we haven't already subscribed.
-
-        :param topic:  The topic to which to subscribe.
-        :type topic:  str
+        Subscribe to a topic from the producer.
 
         """
-        log.msg('consumer:  Subscribing to %s (PCS201)', topic)
-        for node in self.ready_nodes:
-            node.send(201, topic)
+        if not self.ready:
+            return
+        self.send(201, topic)
 
     def unsubscribe(self, topic):
         """
-        Unsubscribe ourselves from the topic.
-
-        :param topic:  The topic from which to unsubscribe.
-        :type topic:  str
+        Unsubscribe from a topic from the producer.
 
         """
-        log.msg('consumer:  Unsubscriber from %s (PCS202)', topic)
-        for node in self.ready_nodes:
-            node.send(202, topic)
+        if not self.ready:
+            return
+        self.send(202, topic)
 
 
-ConsumerClient = make_client('ConsumerClient', Consumer, ConsumerProtocol)
-ConsumerServer = make_server('ConsumerServer', Consumer, ConsumerProtocol)
+PASSTHROUGH = ['subscribe', 'unsubscribe']
+ConsumerClient = make_client('ConsumerClient', PASSTHROUGH, ConsumerProtocol)
+ConsumerServer = make_server('ConsumerServer', PASSTHROUGH, ConsumerProtocol)

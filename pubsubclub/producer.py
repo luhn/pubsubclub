@@ -76,6 +76,8 @@ class ProducerProtocol(ProtocolBase):
         Check if subscribed to topic.  If we are, send message.
 
         """
+        if not self.ready:
+            return
         log.msg('producer:  Received message %s on %s' % (topic, message))
         if topic in self.subscriptions:
             self.send(301, topic, message)
@@ -83,20 +85,6 @@ class ProducerProtocol(ProtocolBase):
             log.msg('producer:  Not subscribed, ignoring.')
 
 
-class Producer(object):
-    """
-    def __init__(self, *args, **kwargs):
-        super(Producer, self).__init__(*args, **kwargs)
-    """
-
-    def publish(self, topic, message):
-        """
-        Distribute a pubsub to all subscribed consumers.
-
-        """
-        for node in self.ready_nodes:
-            node.publish(topic, message)
-
-
-ProducerClient = make_client('ProducerClient', Producer, ProducerProtocol)
-ProducerServer = make_server('ProducerServer', Producer, ProducerProtocol)
+PASSTHROUGH = ['publish']
+ProducerClient = make_client('ProducerClient', PASSTHROUGH, ProducerProtocol)
+ProducerServer = make_server('ProducerServer', PASSTHROUGH, ProducerProtocol)

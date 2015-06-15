@@ -20,6 +20,9 @@ class ProtocolBase(object):
         301: 'onPublish',
     }
 
+    #: Set to true after handshake is completed.
+    ready = False
+
     def onConnect(self, request):
         """
         When a connection is made, remove node from ``starting_nodes`` (if
@@ -71,7 +74,7 @@ class ProtocolBase(object):
 
         """
         log.msg('%s:  Marking connection as ready.', self.ROLE)
-        self.factory.ready_nodes.add(self)
+        self.ready = True
 
 
 class ClientFactory(
@@ -121,10 +124,6 @@ class ClientBase(object):
 
     #: A :class:`set` of :class:`ProtocolBase` for each connection to a node.
     nodes = None
-
-    #: Nodes that have completed the PubSubClub Protocol handstake.  Subset of
-    #: :ivar:`nodes`
-    ready_nodes = None
 
     #: For consumers only, a WAMP class which forwards consumed data to the end
     #: users.
@@ -180,12 +179,9 @@ class ClientBase(object):
         raise ValueError('Could not find node {}:{}'.format(host, port))
 
 
-class ServerBase(websocket.WebSocketServerFactory):
+class ServerBase(websocket.WebSocketServerFactory, object):
     #: A :class:`set` of :class:`ProtocolBase` for each connection to a node.
     nodes = None
-
-    #: Nodes that have completed the PubSubClub Protocol handstake
-    ready_nodes = None
 
     #: For consumers only, a WAMP class which forwards consumed data to the end
     #: users.
@@ -193,20 +189,31 @@ class ServerBase(websocket.WebSocketServerFactory):
 
     def __init__(self, interface, port):
         self.nodes = set()
-        self.ready_nodes = set()
         url = 'ws://{}:{}/'.format(interface, port)
         log.msg('Listening on %s' % url)
         websocket.WebSocketServerFactory.__init__(self, url)
         websocket.listenWS(self)
 
 
-def make_client(name, class_, protocol):
+def passthrough_factory(name):
+    """
+    A factory for methods that will pass the call onto all the nodes.
+
+    """
+    def method(self, *args, **kwargs):
+        for node in self.nodes:
+            getattr(node, name)(*args, **kwargs)
+
+    return method
+
+
+def make_client(name, passthrough, protocol):
     """
     Create a WebSocket client container (subclass of :class:`ClientBase`),
     subclassing from the given class.
 
-    :param class_:  The class to subclass the container from.
-    :type class_:  type
+    :param passthrough:  A list of methods to passthrough to the protocol.
+    :type passthrough:  list of str
     :param protocol:  The class to subclass the protocol from.
     :type protocol:  type
 
@@ -224,21 +231,27 @@ def make_client(name, class_, protocol):
         (ClientFactory,),
         {'protocol': Protocol},
     )
+
+    attrs = {
+        'factory': Factory,
+    }
+    for method in passthrough:
+        attrs[method] = passthrough_factory(method)
     Client = type(
         'Client',
-        (ClientBase, class_),
-        {'factory': Factory},
+        (ClientBase,),
+        attrs,
     )
     return Client
 
 
-def make_server(name, class_, protocol):
+def make_server(name, passthrough, protocol):
     """
     Create a WebSocket server factory (subclass of :class:`ServerBase`),
     subclassing from the given class.
 
-    :param class_:  The class to subclass the container from.
-    :type class_:  type
+    :param passthrough:  A list of methods to passthrough to the protocol.
+    :type passthrough:  list of str
     :param protocol:  The class to subclass the protocol from.
     :type protocol:  type
 
@@ -251,9 +264,15 @@ def make_server(name, class_, protocol):
         (protocol, websocket.WebSocketServerProtocol),
         dict(),
     )
+
+    attrs = {
+        'protocol': Protocol,
+    }
+    for method in passthrough:
+        attrs[method] = passthrough_factory(method)
     Server = type(
         'Server',
-        (ServerBase, class_),
-        {'protocol': Protocol},
+        (ServerBase,),
+        attrs,
     )
     return Server
