@@ -5,15 +5,36 @@
 	</head>
 	<body>
 		<form id="connect">
-			<input type="text" name="uri" placeholder="WSURI" />
+			<label>
+				Connect to
+				<select name="uri">
+					<option>ws://192.168.50.100:9900/</option>
+					<option>ws://192.168.50.101:9900/</option>
+					<option>ws://192.168.50.102:9900/</option>
+					<option>ws://192.168.50.103:9900/</option>
+					<option>ws://localhost:9900/</option>
+				</select>
+			</label>
 			<button type="submit">Connect</button>
 		</form>
 		<form id="subscribe">
-			<input type="text" name="uri" placeholder="URI" />
+			<label>Subscribe to
+				<select name="uri">
+					<option>http://example.com/mytopic</option>
+					<option>http://example.com/mytopic2</option>
+					<option>http://example.com/mytopic3</option>
+					<option>http://example.com/madeup</option>
+				</select>
+			</label>
 			<button type="submit">Subscribe</button>
 		</form>
 		<form id="publish">
-			<input type="text" name="uri" placeholder="URI" />
+			<select name="uri">
+				<option>http://example.com/mytopic</option>
+				<option>http://example.com/mytopic2</option>
+				<option>http://example.com/mytopic3</option>
+				<option>http://example.com/madeup</option>
+			</select>
 			<input type="text" name="content" placeholder="Content" />
 			<button type="submit">Publish</button>
 		</form>

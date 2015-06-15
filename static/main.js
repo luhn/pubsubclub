@@ -12,9 +12,10 @@ $(function() {
 	$("#subscribe, #publish").hide()
 	$("#connect").submit(function(e) {
 		e.preventDefault();
-		ab.connect($(this).find("[name=uri]").val(), function(_session) {
+		var uri = $(this).find("[name=uri]").val();
+		ab.connect(uri, function(_session) {
 			session = _session;
-			log("Connected.");
+			log("Connected to " + uri);
 			$("#subscribe, #publish").show();
 			$("#connect").hide();
 		}, function(code, reason) {
@@ -24,8 +25,10 @@ $(function() {
 
 	$("#subscribe").submit(function(e) {
 		e.preventDefault();
+		var uri = $(this).find("[name=uri]").val();
+		log("Subscribed to " + uri);
 		session.subscribe(
-			$(this).find("[name=uri]").val(),
+				uri,
 			function(topic, event) {
 				log(topic + ": " + event);
 			});
@@ -33,10 +36,14 @@ $(function() {
 
 	$("#publish").submit(function(e) {
 		e.preventDefault();
+		var uri = $(this).find("[name=uri]").val();
+		var content = $(this).find("[name=content]").val();
 		session.call("http://example.com/pubsub#publish", {
-			"channel": $(this).find("[name=uri]").val(),
-			"content": $(this).find("[name=content]").val()
-		}).then(function (res) {},
+			"channel": uri,
+			"content": content
+		}).then(function (res) {
+			log("Published to " + uri + ": " + content);
+		},
 			function (error) {
 				log(error.detail, true);
 			});
