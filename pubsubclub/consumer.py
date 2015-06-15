@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import sys
-import logging
 import random
 
 from twisted.python import log

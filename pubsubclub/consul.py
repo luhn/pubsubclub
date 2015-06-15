@@ -6,7 +6,7 @@ from time import time as unix_timestamp
 
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
-from twisted.internet.defer import Deferred, CancelledError, maybeDeferred
+from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.python import log
 from twisted.python.failure import Failure
 from twisted.web.client import Agent, readBody
