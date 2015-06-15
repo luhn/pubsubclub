@@ -41,6 +41,9 @@ class ProtocolBase(object):
             log.msg('Connection closed.  Discarding self from nodes.')
         self.factory.nodes.discard(self)
         self.factory.ready_nodes.discard(self)
+        if clean:
+            log.msg('Clean close.')
+            self.factory.clean_close = True
 
     def onMessage(self, payload, is_binary):
         """
@@ -76,19 +79,25 @@ class ClientFactory(
     ReconnectingClientFactory,
     object,
 ):
+    clean_close = False
+
     def clientConnectionFailed(self, connector, reason):
         """
         If we fail to connect, try try again.
 
         """
-        self.retry(connector)
+        if not self.clean_close:
+            log.msg("Connection failed, attempting to reconnect.")
+            self.retry(connector)
 
     def clientConnectionLost(self, connector, reason):
         """
         If we lose the connection, attempt to reestablish it.
 
         """
-        self.retry(connector)
+        if not self.clean_close:
+            log.msg("Connection lost, attempting to reconnect.")
+            self.retry(connector)
 
     @property
     def nodes(self):
@@ -152,11 +161,23 @@ class ClientBase(object):
 
         """
         try:
-            self.connections[(host, port)].protocol.close()
+            self._find_node(host, port).sendClose()
         except KeyError:
             log.msg(
                 'Could not find connection to {}:{}.'.format(host, port)
             )
+
+    def _find_node(self, host, port):
+        """
+        Jury-rigging a way of looking up a protocol by host/port.  I should
+        probably re-evaluate how I store nodes, but this will work for now.
+
+        """
+        factory = self.connections[(host, port)]
+        for node in self.nodes:
+            if node.factory == factory:
+                return node
+        raise ValueError('Could not find node {}:{}'.format(host, port))
 
 
 class ServerBase(websocket.WebSocketServerFactory):
