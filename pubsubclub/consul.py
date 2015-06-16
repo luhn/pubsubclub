@@ -35,10 +35,8 @@ class Debouncer(object):
         def func(*args, **kwargs):
             # If we haven't debounced
             if self.wait is None:
-                log.msg('Starting debounce wait.')
                 self.wait = deferLater(reactor, DEBOUNCE_PERIOD, self._call)
 
-            log.msg('Args on deck: %s, %s', repr(args), repr(kwargs))
             self.last_obj = obj
             self.last_args = args
             self.last_kwargs = kwargs
@@ -51,9 +49,6 @@ class Debouncer(object):
         obj = self.last_obj
         args = self.last_args
         kwargs = self.last_kwargs
-        log.msg(
-            'Running function with args: %s, %s', repr(args), repr(kwargs),
-        )
         self.wait = None
         self.last_args = None
         self.last_kwargs = None
@@ -91,8 +86,6 @@ class HTTPResponse(object):
         headers = {
             key: value[0] for key, value in response.headers.getAllRawHeaders()
         }
-        log.msg('Receiving response with headers:  %s', repr(headers))
-        log.msg(headers)
         d = readBody(response)
         return d.addCallback(lambda body: cls(body, headers))
 
@@ -129,7 +122,6 @@ def http_request(method, url, headers=dict()):
     :returns:  A deferred which will callback with a :class:`HTTPResponse`
 
     """
-    log.msg('Making %s request to %s', method, url)
     agent = Agent(reactor)
     request = agent.request(
         method,
@@ -160,18 +152,20 @@ def retry_on_failure(wait, func=None):
         response = Deferred()
 
         def call():
-            log.msg('Making call with retry.')
-            log.msg('{!r} {!r}'.format(args, kwargs))
             d = maybeDeferred(func, *args, **kwargs)
             d.addCallback(response.callback)
             d.addErrback(retry)
 
         def retry(failure):
-            log.msg('HTTP:  Failed with %s, retrying...', failure)
+            log.msg(
+                'Call to {} failed, trying again in {} seconds.'.format(
+                    func.__name__, wait,
+                )
+            )
+            log.msg('Arguments:  {!r} {!r}'.format(args, kwargs))
             reactor.callLater(wait, call)
 
         def callback(result):
-            log.msg('Called back.')
             return result
 
         response.addCallback(callback)
@@ -201,22 +195,21 @@ def deferred_timeout(deferred, timeout):
     deferred.chainDeferred(d)
 
     def trigger_timeout():
-        log.msg('HTTP:  Timeout reached, raising error.')
+        log.msg(
+            'Deferred did not return before timeout, raising TimeoutError.'
+        )
         d.errback(Failure(TimeoutError(), TimeoutError))
 
     def callback(result):
-        log.msg('HTTP:  Response received before timeout.')
         delay.cancel()
         return result
 
-    log.msg('Setting timeout for call.')
     delay = reactor.callLater(timeout, trigger_timeout)
     return d.addBoth(callback)
 
 
 class ConsulDiscovery(object):
     def __init__(self, consul_url, consul_service, client):
-        log.msg('ConsulDiscovery: Initializing')
         self.client = client
         self.consul_url = urlsplit(consul_url)[:2]
         self.consul_service = consul_service
@@ -261,26 +254,14 @@ class ConsulDiscovery(object):
         d = deferred_timeout(http_request('GET', url), 10.0)
 
         d.addCallback(self._process_self)
-
-        def callback(result):
-            log.msg('%s', result)
-            return result
-
         return d
 
     def _process_self(self, result):
-        log.msg('Right before error.')
         result = result.json
-        log.msg('ConsulDiscovery:  Received response:  %s', repr(result))
         self.self = result['Member']['Name']
-        log.msg('ConsulDiscovery:  Set self to %s', self.self)
 
     @retry_on_failure(MIN_QUERY_PERIOD)
     def _query_services(self, wait=None, debounce=False):
-        log.msg(
-            'ConsulDiscovery:  Querying services with wait of %s',
-            wait or 'None',
-        )
         params = {
             'passing': '',
             'pretty': '',
@@ -294,7 +275,6 @@ class ConsulDiscovery(object):
             ('/v1/health/service/{}'.format(self.consul_service),
              urlencode(params), '')
         )
-        log.msg('ConsulDiscovery:  URL is %s', url)
         d = deferred_timeout(
             http_request('GET', url),
             wait * 1.5 if wait else 10.0
@@ -308,24 +288,18 @@ class ConsulDiscovery(object):
         return d.addCallback(self._get_new_index).addCallback(callback)
 
     def _get_new_index(self, response):
-        log.msg(response.headers)
         header = response.headers.get('X-Consul-Index')
         if header:
             self.index = int(header)
-            log.msg('ConsulDiscovery:  New index is %i', self.index)
-        else:
-            log.msg('ConsulDiscovery:  No new index.')
         return response
 
     def _process_services(self, result):
         result = result.json
-        log.msg('ConsulDiscovery:  Received response:  %s', repr(result))
         new_nodes = {
             (
                 service['Node']['Address'], service['Service']['Port'],
             ) for service in result if service['Node']['Node'] != self.self
         }
-        log.msg('ConsulDiscovery:  Nodes:  %s', repr(new_nodes))
         # Nodes that have appeared
         for node in new_nodes - self.nodes:
             log.msg('ConsulDiscovery:  Connecting to %s:%s', *node)

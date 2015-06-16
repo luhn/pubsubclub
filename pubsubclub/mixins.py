@@ -4,8 +4,6 @@ The following classes are mixins in for a subclass of
 integrates PubSubClub into your WAMP application.
 
 """
-from twisted.python import log
-
 from autobahn.wamp1 import protocol as wamp
 
 
@@ -25,7 +23,6 @@ class ProducerMixin:
         the other nodes with subscribed users.
 
         """
-        log.msg('Received dispatch, distributing to nodes.')
         self.producer.publish(topic, event)
         return wamp.WampServerFactory.dispatch(
             self, topic, event, exclude, eligible,
@@ -51,12 +48,8 @@ class ConsumerMixin:
         subscription.  If it is, send a subscription request to the producers.
 
         """
-        log.msg('Received subscription request for %s', topic)
         if len(self.subscriptions[topic]) == 1:  # First subscription
-            log.msg('Forwarding subscription to producers.')
             self.consumer.subscribe(topic)
-        else:
-            log.msg('Already subscribed on producers.  Ignoring request.')
 
     def onClientUnsubscribed(self, protocol, topic):
         """
@@ -65,9 +58,5 @@ class ConsumerMixin:
         producer.
 
         """
-        log.msg('Received unsubscription request for %s', topic)
         if topic not in self.subscriptions:
-            log.msg('Forwarding unsubscription to producers.')
             self.consumer.unsubscribe(topic)
-        else:
-            log.msg('Still some subscribed users.  Ingoring request.')

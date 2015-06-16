@@ -28,19 +28,11 @@ class ConsumerProtocol(ProtocolBase):
         handshake.
 
         """
-        log.msg('consumer:  Connected to producer')
-        log.msg(
-            'consumer:  Declaring implemented versions: %s (PSC101)',
-            ', '.join(
-                '{}.{}'.format(*item) for item in self.SUPPORTED_VERSIONS
-            ),
-        )
         self.send(101, *[list(item) for item in self.SUPPORTED_VERSIONS])
 
     def ping(self):
         if self.pong_received is False:
-            sys.stderr.write('Lost connection!\n')
-            sys.stderr.flush()
+            log.msg('Pong not received in time!')
             self.transport.loseConnection()
             return
         self.pong_received = False
@@ -56,7 +48,6 @@ class ConsumerProtocol(ProtocolBase):
         subscribers.
 
         """
-        log.msg('consumer:  Version %s chosen.', '{}.{}'.format(*version))
         self.ready()
         self.ping()
 
@@ -69,7 +60,6 @@ class ConsumerProtocol(ProtocolBase):
         Receive a pubsub and dispatch it to the end users.
 
         """
-        log.msg('here')
         try:
             # We're making the call to the classmethod to prevent an infinite
             # loop if if two producer/consumer servers are connected to

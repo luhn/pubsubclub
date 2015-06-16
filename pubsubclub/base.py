@@ -37,9 +37,8 @@ class ProtocolBase(object):
         When the connection is lost, remove nodes from the list.
 
         """
-        log.msg(code)
-        log.msg(reason)
         log.msg('Lost connection!  Discarding self from nodes.')
+        log.msg('Reason:  {}'.format(reason))
         self.factory.nodes.discard(self)
         if clean:
             log.msg('Connection was closed cleanly.')
@@ -50,7 +49,6 @@ class ProtocolBase(object):
         Receive and parse an incoming action.
 
         """
-        log.msg('%s:  Received message:  %s', self.ROLE, payload)
         obj = json.loads(payload)
         action, params = obj[0], obj[1:]
         callback = self.CALLBACK_MAP[action]
@@ -62,7 +60,6 @@ class ProtocolBase(object):
 
         """
         serialized = json.dumps([action] + list(params))
-        log.msg('%s: Sending message:  %s', self.ROLE, serialized)
         self.sendMessage(serialized, False)
 
     def ready(self):
@@ -70,7 +67,6 @@ class ProtocolBase(object):
         Mark this connection as having successfully shook hands.
 
         """
-        log.msg('%s:  Marking connection as ready.', self.ROLE)
         self.ready = True
 
 
@@ -129,7 +125,7 @@ class ClientBase(object):
 
         """
         url = 'ws://{}:{}/'.format(host, port)
-        log.msg('Connecting to %s' % url)
+        log.msg('pubsubclub:  Connecting to %s' % url)
         websocket.connectWS(self.factory(url))
 
     def disconnect(self, host, port):
@@ -153,7 +149,7 @@ class ServerBase(websocket.WebSocketServerFactory, object):
     def __init__(self, interface, port):
         self.nodes = WeakSet()
         url = 'ws://{}:{}/'.format(interface, port)
-        log.msg('Listening on %s' % url)
+        log.msg('pubsubclub:  Listening on %s' % url)
         websocket.WebSocketServerFactory.__init__(self, url)
         websocket.listenWS(self)
 
