@@ -1,4 +1,5 @@
 import json
+from weakref import WeakSet
 
 from twisted.python import log
 from twisted.internet.protocol import ReconnectingClientFactory
@@ -38,14 +39,10 @@ class ProtocolBase(object):
         """
         log.msg(code)
         log.msg(reason)
-        if not clean:
-            log.msg('Lost connection!')
-        else:
-            log.msg('Connection closed.  Discarding self from nodes.')
+        log.msg('Lost connection!  Discarding self from nodes.')
         self.factory.nodes.discard(self)
-        self.factory.ready_nodes.discard(self)
         if clean:
-            log.msg('Clean close.')
+            log.msg('Connection was closed cleanly.')
             self.factory.clean_close = True
 
     def onMessage(self, payload, is_binary):
@@ -82,6 +79,8 @@ class ClientFactory(
     ReconnectingClientFactory,
     object,
 ):
+    #: Indicates whether the closure was clean or not.  We attempt a reconnect
+    #: on unclean closures.
     clean_close = False
 
     def clientConnectionFailed(self, connector, reason):
@@ -106,21 +105,10 @@ class ClientFactory(
     def nodes(self):
         return self.container.nodes
 
-    @property
-    def ready_nodes(self):
-        return self.container.ready_nodes
-
-    @property
-    def processor(self):
-        return self.container.processor
-
 
 class ClientBase(object):
     #: The client factory.  Use for connecting to a server.
     factory = None
-
-    #: A :class:`dict` of :class:`ProtocolBase` for each connection to a node.
-    connections = None
 
     #: A :class:`set` of :class:`ProtocolBase` for each connection to a node.
     nodes = None
@@ -131,9 +119,7 @@ class ClientBase(object):
 
     def __init__(self, nodes=tuple()):
         self.factory.container = self
-        self.nodes = set()
-        self.ready_nodes = set()
-        self.connections = dict()
+        self.nodes = WeakSet()
         for host, port in nodes:
             self.connect(host, port)
 
@@ -142,41 +128,18 @@ class ClientBase(object):
         Make a connection to a server.
 
         """
-        key = (host, port)
-        if key in self.connections:
-            log.msg(
-                'Already connected to {}:{}!  Will not connect again.'
-                .format(host, port)
-            )
-            return
         url = 'ws://{}:{}/'.format(host, port)
         log.msg('Connecting to %s' % url)
-        factory = self.connections[(host, port)] = self.factory(url)
-        websocket.connectWS(factory)
+        websocket.connectWS(self.factory(url))
 
     def disconnect(self, host, port):
         """
         Lose a previously made connection.
 
         """
-        try:
-            self._find_node(host, port).sendClose()
-        except KeyError:
-            log.msg(
-                'Could not find connection to {}:{}.'.format(host, port)
-            )
-
-    def _find_node(self, host, port):
-        """
-        Jury-rigging a way of looking up a protocol by host/port.  I should
-        probably re-evaluate how I store nodes, but this will work for now.
-
-        """
-        factory = self.connections[(host, port)]
         for node in self.nodes:
-            if node.factory == factory:
-                return node
-        raise ValueError('Could not find node {}:{}'.format(host, port))
+            if node.factory.host == host and node.factory.port == port:
+                node.sendClose()
 
 
 class ServerBase(websocket.WebSocketServerFactory, object):
@@ -188,7 +151,7 @@ class ServerBase(websocket.WebSocketServerFactory, object):
     processor = None
 
     def __init__(self, interface, port):
-        self.nodes = set()
+        self.nodes = WeakSet()
         url = 'ws://{}:{}/'.format(interface, port)
         log.msg('Listening on %s' % url)
         websocket.WebSocketServerFactory.__init__(self, url)
