@@ -72,7 +72,7 @@ class ConsulMock(resource.Resource):
                     'Output': '',
                     'ServiceID': 'pubsub',
                     'ServiceName': 'pubsub',
-                },],
+                }],
             } for (node, address, port) in nodes])
             log.msg('ConsulMock:  Index is %i', change_index)
             request.setHeader('X-Consul-Index', str(change_index))
