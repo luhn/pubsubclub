@@ -25,7 +25,7 @@ class ProducerProtocol(ProtocolBase):
         one we want to use.
 
         """
-        version_set = {tuple(item) for item in versions}
+        version_set = set(tuple(item) for item in versions)
         mutual_versions = version_set & self.SUPPORTED_VERSIONS
         if not mutual_versions:
             self.sendClose()

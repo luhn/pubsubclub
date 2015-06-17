@@ -144,10 +144,10 @@ if __name__ == '__main__':
         ])
 
         def assertions():
-            compare = {
+            compare = set([
                 ('192.168.1.3', 125),
                 ('192.168.1.4', 321),
-            }
+            ])
             if client.connections != compare:
                 raise AssertionError(
                     '{!r} != {!r}'.format(client.connections, compare)
@@ -167,10 +167,10 @@ if __name__ == '__main__':
         ])
 
         def first_test():
-            compare = {
+            compare = set([
                 ('192.168.1.3', 125),
                 ('192.168.1.4', 321),
-            }
+            ])
             if client.connections != compare:
                 raise AssertionError(
                     '{!r} != {!r}'.format(client.connections, compare)
@@ -184,10 +184,10 @@ if __name__ == '__main__':
             ])
 
         def second_test():
-            compare = {
+            compare = set([
                 ('192.168.1.3', 125),
                 ('192.168.1.4', 321),
-            }
+            ])
             if client.connections != compare:
                 raise AssertionError(
                     '{!r} != {!r}'.format(client.connections, compare)

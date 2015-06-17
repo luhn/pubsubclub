@@ -296,11 +296,11 @@ class ConsulDiscovery(object):
 
     def _process_services(self, result):
         result = result.json
-        new_nodes = {
+        new_nodes = set(
             (
                 service['Node']['Address'], service['Service']['Port'],
             ) for service in result if service['Node']['Node'] != self.self
-        }
+        )
         # Nodes that have appeared
         for node in new_nodes - self.nodes:
             log.msg('ConsulDiscovery:  Connecting to %s:%s', *node)
