@@ -18,6 +18,9 @@ Pubsubclub is also restricted to Twisted right now, but it would be possible
 to expand to [asyncio](https://docs.python.org/3/library/asyncio.html) just
 like Autobahn.
 
+PubSubClub also only works with Python 2.6 and 2.7 because Autobahn|Python
+0.8.15 only supports Python 2.
+
 You can either manually define the nodes in your cluster, or use discover them
 using the [Consul](http://consul.io/).  However, it should be easy to extend it
 to use your favorite service discovery should you desire to.
