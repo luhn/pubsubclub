@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-from twisted.python import log
-
 from .base import ProtocolBase, make_client, make_server
 
 
