@@ -11,7 +11,9 @@ class ProducerProtocol(ProtocolBase):
 
     """
     ROLE = 'producer'
-    SUPPORTED_VERSIONS = {(1, 0)}
+    SUPPORTED_VERSIONS = set([
+        (1, 0),
+    ])
     subscriptions = None
 
     def onOpen(self):

@@ -83,9 +83,10 @@ class HTTPResponse(object):
         :returns:  A Deferred which will fire with the response object.
 
         """
-        headers = {
-            key: value[0] for key, value in response.headers.getAllRawHeaders()
-        }
+        headers = dict(
+            (key, value[0])
+            for key, value in response.headers.getAllRawHeaders()
+        )
         d = readBody(response)
         return d.addCallback(lambda body: cls(body, headers))
 

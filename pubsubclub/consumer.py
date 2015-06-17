@@ -18,7 +18,9 @@ class ConsumerProtocol(ProtocolBase):
 
     """
     ROLE = 'consumer'
-    SUPPORTED_VERSIONS = {(1, 0)}
+    SUPPORTED_VERSIONS = set([
+        (1, 0),
+    ])
     pong_received = True
 
     def onOpen(self):

@@ -123,10 +123,10 @@ if __name__ == '__main__':
     discovery.start()
 
     def test_setup():
-        compare = {
+        compare = set([
             ('192.168.1.2', 124),
             ('192.168.1.3', 125),
-        }
+        ])
         if client.connections != compare:
             raise AssertionError(
                 '{!r} != {!r}'.format(client.connections, compare)
