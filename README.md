@@ -9,9 +9,8 @@ or more nodes for scaling and/or high availability.
 PubSubClub only supports WAMPv1 at the moment, and therefore Autobahn|Python <=
 0.8.15, because WAMPv1 support was removed in 0.9.0.  Currently, I have little
 motivation to support WAMPv2 because I do not personally use it yet, and WAMPv2
-support for PubSubClub will be made obsolete by the [3.0 release of
-Crossbar.io](http://crossbar.io/docs/Roadmap/), scheduled for release in August
-2015.
+support for PubSubClub will be made obsolete by the release of
+[multi-node support for Crossbar.io](http://crossbar.io/docs/Roadmap/#multi-core-and-multi-node-support).
 
 Pubsubclub is also restricted to Twisted right now, but it would be possible
 to expand to [asyncio](https://docs.python.org/3/library/asyncio.html) just
