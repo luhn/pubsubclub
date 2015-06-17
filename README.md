@@ -178,6 +178,29 @@ factory.producer = producer
 reactor.run()
 ```
 
+## Node discovery
+
+In the above examples, we hardcode into the clients what servers to connect to.
+This obviously won't work well for the unstable topography of a
+highly-available distribute system.
+
+Right now PubSubClub supports node discovery via [Consul](consul.io).  Setting
+this up is very simple.
+
+```python
+from pubsubclub import consul
+
+discovery = consul.ConsulDiscovery(
+    'http://localhost:18101/', 'consul', client,
+)
+discovery.start()
+```
+
+The arguments for `ConsulDiscovery` are respectively the URL for Consul's HTTP
+API, the name of the service to query, and the producer or consumer client.
+
+No other discovery services are implemented at this time.
+
 ## Scalability
 
 Each PubSubClub client makes a connection to each PubSubClub server.  Usually
