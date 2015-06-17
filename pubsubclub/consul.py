@@ -102,7 +102,7 @@ class HTTPResponse(object):
 
     def __str__(self):
         return (
-            'Headers: {!r}\nBody: {}'.format(self.headers, self.body)
+            'Headers: {0!r}\nBody: {1}'.format(self.headers, self.body)
         )
 
     def __repr__(self):
@@ -159,11 +159,11 @@ def retry_on_failure(wait, func=None):
 
         def retry(failure):
             log.msg(
-                'Call to {} failed, trying again in {} seconds.'.format(
+                'Call to {0} failed, trying again in {1} seconds.'.format(
                     func.__name__, wait,
                 )
             )
-            log.msg('Arguments:  {!r} {!r}'.format(args, kwargs))
+            log.msg('Arguments:  {0!r} {1!r}'.format(args, kwargs))
             reactor.callLater(wait, call)
 
         def callback(result):
@@ -268,12 +268,12 @@ class ConsulDiscovery(object):
             'pretty': '',
         }
         if wait:
-            params['wait'] = '{}s'.format(wait)
+            params['wait'] = '{0}s'.format(wait)
         if self.index:
             params['index'] = self.index
         url = urlunsplit(
             self.consul_url +
-            ('/v1/health/service/{}'.format(self.consul_service),
+            ('/v1/health/service/{0}'.format(self.consul_service),
              urlencode(params), '')
         )
         d = deferred_timeout(

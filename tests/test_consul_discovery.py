@@ -129,7 +129,7 @@ if __name__ == '__main__':
         ])
         if client.connections != compare:
             raise AssertionError(
-                '{!r} != {!r}'.format(client.connections, compare)
+                '{0!r} != {1!r}'.format(client.connections, compare)
             )
 
     def test_change(self):
@@ -150,7 +150,7 @@ if __name__ == '__main__':
             ])
             if client.connections != compare:
                 raise AssertionError(
-                    '{!r} != {!r}'.format(client.connections, compare)
+                    '{0!r} != {1!r}'.format(client.connections, compare)
                 )
 
         return deferLater(reactor, consul.DEBOUNCE_PERIOD + 0.1, assertions)
@@ -173,7 +173,7 @@ if __name__ == '__main__':
             ])
             if client.connections != compare:
                 raise AssertionError(
-                    '{!r} != {!r}'.format(client.connections, compare)
+                    '{0!r} != {1!r}'.format(client.connections, compare)
                 )
 
             # Change nodes for second test
@@ -190,7 +190,7 @@ if __name__ == '__main__':
             ])
             if client.connections != compare:
                 raise AssertionError(
-                    '{!r} != {!r}'.format(client.connections, compare)
+                    '{0!r} != {1!r}'.format(client.connections, compare)
                 )
 
         d = deferLater(reactor, consul.DEBOUNCE_PERIOD * 2 / 3, first_test)

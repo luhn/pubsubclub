@@ -41,7 +41,7 @@ class ProtocolBase(object):
 
         """
         log.msg('Lost connection!  Discarding self from nodes.')
-        log.msg('Reason:  {}'.format(reason))
+        log.msg('Reason:  {0}'.format(reason))
         self.factory.nodes.discard(self)
         if clean:
             log.msg('Connection was closed cleanly.')
@@ -127,7 +127,7 @@ class ClientBase(object):
         Make a connection to a server.
 
         """
-        url = 'ws://{}:{}/'.format(host, port)
+        url = 'ws://{0}:{1}/'.format(host, port)
         log.msg('pubsubclub:  Connecting to %s' % url)
         websocket.connectWS(self.factory(url))
 
@@ -151,7 +151,7 @@ class ServerBase(websocket.WebSocketServerFactory, object):
 
     def __init__(self, interface, port):
         self.nodes = WeakSet()
-        url = 'ws://{}:{}/'.format(interface, port)
+        url = 'ws://{0}:{1}/'.format(interface, port)
         log.msg('pubsubclub:  Listening on %s' % url)
         websocket.WebSocketServerFactory.__init__(self, url)
         websocket.listenWS(self)
