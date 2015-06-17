@@ -17,6 +17,18 @@ You can either manually define the nodes in your cluster, or use discover them
 using the [Consul](http://consul.io/).  However, it should be easy to extend it
 to use your favorite service discovery should you desire to.
 
+## Overview
+
+Each node in a PubSubClub cluster is a _producer_ or _consumer_ or both.
+Consumers and producers communicate with eachother via [a simple
+WebSocket](SPEC.md) protocol, the consumers informing the producers what pubsub
+topics they're interested in and the producers broadcasting relevant pubsubs to
+the consumers.
+
+Either the producers or the consumers must behave as a WebSocket client and the
+other behave as a TCP server.  This must be consistent across the entire
+cluster.
+
 ## Scalability
 
 Each PubSubClub client makes a connection to each PubSubClub server.  Usually
