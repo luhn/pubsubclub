@@ -21,6 +21,17 @@ You can either manually define the nodes in your cluster, or use discover them
 using the [Consul](http://consul.io/).  However, it should be easy to extend it
 to use your favorite service discovery should you desire to.
 
+## Installation
+
+You can install PubSubClub from GitHub using pip.
+
+```bash
+pip install https://github.com/luhn/pubsubclub/archive/master.tar.gz
+```
+
+PubSubClub runs entirely within your WAMP application—You don't run any
+additional programs.
+
 ## Overview
 
 Each node in a PubSubClub cluster is a _producer_ or _consumer_ or both.
