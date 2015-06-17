@@ -36,6 +36,13 @@ pip install https://github.com/luhn/pubsubclub/archive/master.tar.gz
 PubSubClub runs entirely within your WAMP application—You don't run any
 additional programs.
 
+If you're running Python 2.6, the
+[weakrefset](https://pypi.python.org/pypi/weakrefset) package is required.
+
+```bash
+pip install weakrefset
+```
+
 ## Overview
 
 Each node in a PubSubClub cluster is a _producer_ or _consumer_ or both.

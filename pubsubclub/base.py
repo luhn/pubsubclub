@@ -1,5 +1,8 @@
 import json
-from weakref import WeakSet
+try:
+    from weakref import WeakSet
+except ImportError:
+    from weakrefset import WeakSet
 
 from twisted.python import log
 from twisted.internet.protocol import ReconnectingClientFactory
