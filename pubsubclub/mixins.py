@@ -23,7 +23,8 @@ class ProducerMixin:
         the other nodes with subscribed users.
 
         """
-        self.producer.publish(topic, event)
+        if self.producer is not None:
+            self.producer.publish(topic, event)
         return wamp.WampServerFactory.dispatch(
             self, topic, event, exclude, eligible,
         )
@@ -48,8 +49,9 @@ class ConsumerMixin:
         subscription.  If it is, send a subscription request to the producers.
 
         """
-        if len(self.subscriptions[topic]) == 1:  # First subscription
-            self.consumer.subscribe(topic)
+        if self.consumer is not None:
+            if len(self.subscriptions[topic]) == 1:  # First subscription
+                self.consumer.subscribe(topic)
 
     def onClientUnsubscribed(self, protocol, topic):
         """
@@ -58,5 +60,6 @@ class ConsumerMixin:
         producer.
 
         """
-        if topic not in self.subscriptions:
-            self.consumer.unsubscribe(topic)
+        if self.consumer is not None:
+            if topic not in self.subscriptions:
+                self.consumer.unsubscribe(topic)
