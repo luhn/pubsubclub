@@ -1,5 +1,7 @@
 # PubSubClub
 
+[![Build Status](https://travis-ci.org/luhn/pubsubclub.svg?branch=master)](https://travis-ci.org/luhn/pubsubclub)
+
 PubSubClub is an Autobahn|Python mixin for distributing WAMPv1 PubSubs among a
 cluster of instances, a necessity for an WAMP service that has to run on two
 or more nodes for scaling and/or high availability.
