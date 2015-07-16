@@ -241,7 +241,7 @@ def test_no_self_connect():
     consumer.processor = WampConsumerServerFactory('ws://localhost:19202')
     listenWS(consumer.processor)
     producer = ProducerClient(id=id)
-    init_wait = deferLater(reactor, 0.5, producer.connect, 'localhost', 19200)
+    deferLater(reactor, 0.5, producer.connect, 'localhost', 19200)
 
     def check_connection():
         """
@@ -266,6 +266,7 @@ if __name__ == '__main__':
 
     def errback(err):
         # On error, print and then exit with a 2
+        global exit_code
         reactor.stop()
         err.printTraceback()
         exit_code = 2
