@@ -104,6 +104,10 @@ class ClientFactory(
     def nodes(self):
         return self.container.nodes
 
+    @property
+    def id(self):
+        return self.container.id
+
 
 class ClientBase(object):
     #: The client factory.  Use for connecting to a server.
@@ -116,9 +120,10 @@ class ClientBase(object):
     #: users.
     processor = None
 
-    def __init__(self, nodes=tuple()):
+    def __init__(self, nodes=tuple(), id=None):
         self.factory.container = self
         self.nodes = WeakSet()
+        self.id = id
         for host, port in nodes:
             self.connect(host, port)
 
@@ -149,12 +154,13 @@ class ServerBase(websocket.WebSocketServerFactory, object):
     #: users.
     processor = None
 
-    def __init__(self, interface, port):
+    def __init__(self, interface, port, id=None):
         self.nodes = WeakSet()
         url = 'ws://{0}:{1}/'.format(interface, port)
         log.msg('pubsubclub:  Listening on %s' % url)
         websocket.WebSocketServerFactory.__init__(self, url)
         websocket.listenWS(self)
+        self.id = id
 
 
 def passthrough_factory(name):

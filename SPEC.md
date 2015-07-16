@@ -1,4 +1,4 @@
-# PubSubClub Protocol specification (v0.1.0)
+# PubSubClub Protocol specification (v0.1.1)
 
 The PubSubClub Protocol implements a simple publish-subscribe messaging system
 among a cluster of nodes.  It is intended for use with PubSubClub, a Python
@@ -43,7 +43,11 @@ selects which version the connection will use.  The highest mutually-supported
 version should be selected.  The version parameter is serialized in the same
 format as PSC101.
 
-Parameters:  version (array)
+The producer also will send across an ID, which is a random integer unique to
+the node.  This is used so that the producer can avoid connecting to itself
+if it also plays the role of the consumer.
+
+Parameters:  version (array), id (integer)
 
 ### 2xx — Subscription
 

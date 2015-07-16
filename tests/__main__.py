@@ -13,6 +13,7 @@ from pubsubclub import (
     ProducerMixin,
     ConsumerServer,
     ProducerClient,
+    generate_id,
 )
 
 
@@ -226,20 +227,50 @@ def test_connect_replay():
     ])
 
 
+def test_no_self_connect():
+    """
+    Test that when a producer connects, the consumer sends all existing
+    subscription to it.
+
+    """
+    class WampConsumerServerFactory(ConsumerMixin, wamp.WampServerFactory):
+        protocol = wamp.WampServerProtocol
+
+    id = generate_id()
+    consumer = ConsumerServer('localhost', 19200, id=id)
+    consumer.processor = WampConsumerServerFactory('ws://localhost:19202')
+    listenWS(consumer.processor)
+    producer = ProducerClient(id=id)
+    init_wait = deferLater(reactor, 0.5, producer.connect, 'localhost', 19200)
+
+    def check_connection():
+        """
+        Make sure producer has no connections, because it's been controlled.
+
+        """
+        print(set(producer.nodes))
+        assert set(producer.nodes) == set()
+
+    return deferLater(reactor, 1.0, check_connection)
+
+
 if __name__ == '__main__':
     import logging
+    import sys
     logging.basicConfig(level=logging.INFO)
 
     d = test_basic()
     d.addCallback(lambda _: test_connect_replay())
+    d.addCallback(lambda _: test_no_self_connect())
+    exit_code = 0
 
     def errback(err):
         # On error, print and then exit with a 2
         reactor.stop()
         err.printTraceback()
-        import sys
-        sys.exit(2)
+        exit_code = 2
 
     d.addCallback(lambda _: reactor.stop())
     d.addErrback(errback)
     reactor.run()
+    sys.exit(exit_code)

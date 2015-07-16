@@ -19,7 +19,7 @@ class ConsumerProtocol(ProtocolBase):
     """
     ROLE = 'consumer'
     SUPPORTED_VERSIONS = set([
-        (1, 0),
+        (1, 0), (1, 1),
     ])
     pong_received = True
 
@@ -43,7 +43,7 @@ class ConsumerProtocol(ProtocolBase):
     def onPong(self, _):
         self.pong_received = True
 
-    def onVersionChosen(self, version):
+    def onVersionChosen(self, version, id=None):
         """
         Once the publisher chooses the version, start sending over all the
         subscribers.
@@ -51,6 +51,16 @@ class ConsumerProtocol(ProtocolBase):
         """
         self.ready()
         self.ping()
+
+        print(id, self.factory.id)
+        if(
+                id is not None
+                and self.factory.id is not None
+                and id == self.factory.id
+        ):
+            # Don't connect to self.
+            self.sendClose()
+            return
 
         # Start sending out all existing subscriptions
         for topic in self.factory.processor.subscriptions.iterkeys():

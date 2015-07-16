@@ -12,7 +12,7 @@ class ProducerProtocol(ProtocolBase):
     """
     ROLE = 'producer'
     SUPPORTED_VERSIONS = set([
-        (1, 0),
+        (1, 0), (1, 1),
     ])
     subscriptions = None
 
@@ -30,8 +30,11 @@ class ProducerProtocol(ProtocolBase):
         if not mutual_versions:
             self.sendClose()
             return
-        selected = sorted(mutual_versions)[0]
-        self.send(102, list(selected))
+        selected = max(mutual_versions)
+        if selected >= (1, 1):
+            self.send(102, list(selected), self.factory.id)
+        else:
+            self.send(102, list(selected))
         self.ready()
 
     def onSubscribe(self, topic):
