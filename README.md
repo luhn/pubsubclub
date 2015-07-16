@@ -172,7 +172,7 @@ from twisted.internet import reactor
 from autobahn.twisted.websocket import listenWS
 from autobahn.wamp1 import protocol as wamp
 from pubsubclub import (
-    ConsumerMixin, ProducerMixin, ConsumerServer, ProducerClient,
+    ConsumerMixin, ProducerMixin, ConsumerServer, ProducerClient, generate_id,
 )
 
 
@@ -187,18 +187,23 @@ class WampServerFactory(ConsumerMixin, ProducerClient, wamp.WampServerFactory):
 factory = WampServerFactory('ws://0.0.0.0:8080')
 listenWS(factory)
 
-consumer = ConsumerServer('0.0.0.0', 19000)
+id = generate_id()
+consumer = ConsumerServer('0.0.0.0', 19000, id=id)
 factory.consumer = consumer
 consumer.processor = factory
 
 producer = ProducerClient([
     ('192.168.1.123', 19000),
     ('192.168.1.124', 19000),
-])
+], id=id)
 factory.producer = producer
 
 reactor.run()
 ```
+
+Notice how we added the ID.  This prevents the producer and consumer from
+connecting to eachother and causing an infinite loop.  This is especially
+important if you implement service discovery.
 
 ## Node discovery
 
