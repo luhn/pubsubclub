@@ -44,8 +44,6 @@ class ConsulMock(resource.Resource):
         if request.path == '/v1/health/service/consul':
             self._services(request)
             return NOT_DONE_YET
-        elif request.path == '/v1/agent/self':
-            return self._self(request)
         else:
             return 'FATAL'
 
@@ -87,17 +85,6 @@ class ConsulMock(resource.Resource):
             log.msg('ConsulMock:  Not waiting for anything.')
             deferLater(reactor, 0.0001, finish_request)
 
-    def _self(self, request):
-        response = json.dumps({
-            'Member': {
-                'Name': 'test1',
-                'Addr': '192.168.1.1',
-                'Port': 123,
-            },
-        })
-        log.msg('ConsulMock:  Responding with: %s', response)
-        return response
-
 
 class ClientMock(object):
     def __init__(self):
@@ -124,6 +111,7 @@ if __name__ == '__main__':
 
     def test_setup():
         compare = set([
+            ('192.168.1.1', 123),
             ('192.168.1.2', 124),
             ('192.168.1.3', 125),
         ])
@@ -145,6 +133,7 @@ if __name__ == '__main__':
 
         def assertions():
             compare = set([
+                ('192.168.1.1', 123),
                 ('192.168.1.3', 125),
                 ('192.168.1.4', 321),
             ])
@@ -168,6 +157,7 @@ if __name__ == '__main__':
 
         def first_test():
             compare = set([
+                ('192.168.1.1', 123),
                 ('192.168.1.3', 125),
                 ('192.168.1.4', 321),
             ])
@@ -185,6 +175,7 @@ if __name__ == '__main__':
 
         def second_test():
             compare = set([
+                ('192.168.1.1', 123),
                 ('192.168.1.3', 125),
                 ('192.168.1.4', 321),
             ])

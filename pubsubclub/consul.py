@@ -216,13 +216,11 @@ class ConsulDiscovery(object):
         self.consul_service = consul_service
         self.nodes = set()
         self.index = None
-        self.self = None
         self.last_queued = 0.0
 
     def start(self):
         log.msg('ConsulDiscovery:  Starting')
-        d = self._query_self()  # Who are we?
-        d.addCallback(lambda _: self._query_services())  # Get initial list
+        d = self._query_services()  # Get initial list
         d.addCallback(self.requeue)
         d.addErrback(self._print_traceback)
         return d
@@ -244,22 +242,6 @@ class ConsulDiscovery(object):
     def _handle_api_error(self, failure):
         failure.printTraceback()
         deferLater(reactor, 10.0, self.requeue)
-
-    @retry_on_failure(MIN_QUERY_PERIOD)
-    def _query_self(self):
-        log.msg('ConsulDiscovery:  Querying for self.')
-        url = urlunsplit(
-            self.consul_url +
-            ('/v1/agent/self', '', '')
-        )
-        d = deferred_timeout(http_request('GET', url), 10.0)
-
-        d.addCallback(self._process_self)
-        return d
-
-    def _process_self(self, result):
-        result = result.json
-        self.self = result['Member']['Name']
 
     @retry_on_failure(MIN_QUERY_PERIOD)
     def _query_services(self, wait=None, debounce=False):
@@ -299,7 +281,7 @@ class ConsulDiscovery(object):
         new_nodes = set(
             (
                 service['Node']['Address'], service['Service']['Port'],
-            ) for service in result if service['Node']['Node'] != self.self
+            ) for service in result
         )
         # Nodes that have appeared
         for node in new_nodes - self.nodes:
