@@ -30,7 +30,7 @@ to use your favorite service discovery should you desire to.
 You can install PubSubClub from GitHub using pip.
 
 ```bash
-pip install https://github.com/luhn/pubsubclub/archive/v0.1.0.tar.gz
+pip install https://github.com/luhn/pubsubclub/archive/v0.1.1.tar.gz
 ```
 
 PubSubClub runs entirely within your WAMP application—You don't run any
