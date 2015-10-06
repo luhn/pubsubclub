@@ -3,3 +3,5 @@ mccabe==0.3
 pep8==1.5.7
 pyflakes==0.8.1
 weakrefset==1.0.0
+autobahn==0.8.15
+twisted==15.4.0
