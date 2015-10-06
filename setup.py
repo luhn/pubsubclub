@@ -8,8 +8,4 @@ setup(
         'console_scripts': [
         ],
     },
-    install_requires=[
-        'autobahn <= 0.8.15',
-        'twisted',
-    ],
 )
